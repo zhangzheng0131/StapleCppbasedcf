@@ -170,8 +170,9 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
     train(_tmpl, 1.0); // train with initial frame
  }
 // Update position based on the new frame
-cv::Rect KCFTracker::update(cv::Mat image)
+cv::Rect KCFTracker::update(cv::Mat image, float &th)
 {
+    cv::Rect pre = _roi;
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
     if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 1;
     if (_roi.x >= image.cols - 1) _roi.x = image.cols - 2;
@@ -219,9 +220,21 @@ cv::Rect KCFTracker::update(cv::Mat image)
     if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 2;
 
     assert(_roi.width >= 0 && _roi.height >= 0);
+    
+    if (_roi.x + _roi.width <= 0)
+        _roi.x = -_roi.width + 1;
+    if (_roi.y + _roi.height <= 0)
+        _roi.y = -_roi.height + 1;
+    if (_roi.x >= image.cols - 1)
+        _roi.x = image.cols - 2;
+    if (_roi.y >= image.rows - 1)
+        _roi.y = image.rows - 2;
+    if (abs(pre.x-_roi.x)<4 && abs(pre.y-_roi.y)<4)
+        _roi = pre;
+    
     cv::Mat x = getFeatures(image, 0);
     train(x, interp_factor);
-
+    th = peak_value;
     return _roi;
 }
 
