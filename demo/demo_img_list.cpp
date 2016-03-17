@@ -92,7 +92,7 @@ public:
 
         if (0 != m_tracker[idx])
             delete m_tracker[idx];
-        m_tracker[idx] = new KCFTracker(true,true,
+        m_tracker[idx] = new KCFTracker(true, true,
                                         true, true);
         m_tracker[idx]->init(roi_s, m_frame);
         m_objs[idx].rect = roi_s;
@@ -343,20 +343,22 @@ int main(int argc, char* argv[]){
                     obj.rect.x, obj.rect.y,
                     obj.rect.width+obj.rect.x-1,
                     obj.rect.height+obj.rect.y-1,
-                    obj.id, obj.cateId);
+                    obj.cateId, obj.id);
             if (1==isSave)
             {
                 char str[50]={0};
-                sprintf(str,"ID:%d", obj.id);
+                sprintf(str,"%d", obj.id);
                 cv::putText(frame, str,
-                            cv::Point(obj.rect.x+20,
-                                      obj.rect.y+20), 
-                            cv::FONT_HERSHEY_SIMPLEX, 1,
-                            cv::Scalar(255,0,0), 2, 8);
+                            cv::Point(obj.rect.x+obj.rect.width/2,
+                                      obj.rect.y+obj.rect.height/2), 
+                            cv::FONT_HERSHEY_SIMPLEX, 0.5,
+                            cv::Scalar(255,0,0), 1, 8);
             
-                cv::rectangle(frame,
-                              obj.rect,
-                              cv::Scalar(255,0,0),2, 8);
+                cv::ellipse(frame,
+                            cv::RotatedRect(cv::Point(obj.rect.x+obj.rect.width/2,
+                                                      obj.rect.y+obj.rect.height/2),
+                                            cv::Size(obj.rect.width, obj.rect.height), 0),
+                            cv::Scalar(255,0,0),2, 8);
             }
         }
         if (1==isSave)
