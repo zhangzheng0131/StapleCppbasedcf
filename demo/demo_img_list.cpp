@@ -274,7 +274,7 @@ int usage()
     printf("Usage::");
     printf("\t./demo_video [Paras] img.lst res.txt\n");
     printf("Paras::\n");
-    printf("\ts: Save the video result");
+    printf("\ts: Save the video result\n");
     printf("\tf: Feature name [lab ,hog]. Default lab\n");
     printf("\th: Print the help information\n");
     return 0;
