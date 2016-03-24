@@ -66,7 +66,7 @@ static int nextFrame(cv::Mat &frame)
         tmp = cv::imread(path);
     }
 
-    cv::Size dsize = cv::Size(320,240);
+    cv::Size dsize = cv::Size(640,480);
     cv::resize(tmp, frame, dsize);
     return 0;
 }
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]){
         {
             float th = 0;
             cv::Rect result = tracker.update(frame, th);
-            if (th < 0.2f)
+            if (th < 0.1f)
             {
                 isUpdate = false;
             }

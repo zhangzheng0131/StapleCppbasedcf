@@ -170,7 +170,7 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
     train(_tmpl, 1.0); // train with initial frame
  }
 // Update position based on the new frame
-cv::Rect KCFTracker::update(cv::Mat image, float &th)
+cv::Rect KCFTracker::update(cv::Mat &image, float &th)
 {
     cv::Rect pre = _roi;
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
@@ -233,11 +233,94 @@ cv::Rect KCFTracker::update(cv::Mat image, float &th)
         _roi = pre;
     
     cv::Mat x = getFeatures(image, 0);
-    train(x, interp_factor);
     th = peak_value;
+
+    //if (th>0.2f)
+    train(x, interp_factor);
     return _roi;
 }
 
+
+cv::Rect KCFTracker::trackbydetect(cv::Mat &image,
+                                   float &th,
+                                   cv::Rect &det)
+{
+    cv::Rect pre_roi = _roi;
+    _roi = det;
+    if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
+    if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 1;
+    if (_roi.x >= image.cols - 1) _roi.x = image.cols - 2;
+    if (_roi.y >= image.rows - 1) _roi.y = image.rows - 2;
+
+    float cx = _roi.x + _roi.width / 2.0f;
+    float cy = _roi.y + _roi.height / 2.0f;
+
+
+    float peak_value;
+    cv::Point2f res = detect(_tmpl, getFeatures(image, 0, 1.0f), peak_value);
+
+    if (scale_step != 1) {
+        // Test at a smaller _scale
+        float new_peak_value;
+        cv::Point2f new_res = detect(_tmpl, getFeatures(image, 0, 1.0f / scale_step), new_peak_value);
+
+        if (scale_weight * new_peak_value > peak_value) {
+            res = new_res;
+            peak_value = new_peak_value;
+            _scale /= scale_step;
+            _roi.width /= scale_step;
+            _roi.height /= scale_step;
+        }
+
+        // Test at a bigger _scale
+        new_res = detect(_tmpl, getFeatures(image, 0, scale_step), new_peak_value);
+
+        if (scale_weight * new_peak_value > peak_value) {
+            res = new_res;
+            peak_value = new_peak_value;
+            _scale *= scale_step;
+            _roi.width *= scale_step;
+            _roi.height *= scale_step;
+        }
+    }
+
+    // Adjust by cell size and _scale
+    _roi.x = cx - _roi.width / 2.0f + ((float) res.x * cell_size * _scale);
+    _roi.y = cy - _roi.height / 2.0f + ((float) res.y * cell_size * _scale);
+
+    if (_roi.x >= image.cols - 1) _roi.x = image.cols - 1;
+    if (_roi.y >= image.rows - 1) _roi.y = image.rows - 1;
+    if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 2;
+    if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 2;
+
+    assert(_roi.width >= 0 && _roi.height >= 0);
+    
+    if (_roi.x + _roi.width <= 0)
+        _roi.x = -_roi.width + 1;
+    if (_roi.y + _roi.height <= 0)
+        _roi.y = -_roi.height + 1;
+    if (_roi.x >= image.cols - 1)
+        _roi.x = image.cols - 2;
+    if (_roi.y >= image.rows - 1)
+        _roi.y = image.rows - 2;
+    
+    th = peak_value;
+    if (th<=0.2)
+    {
+        _roi = pre_roi;
+    }
+    else
+    {
+        cv::Mat x = getFeatures(image, 0);
+        train(x, 1);
+    }
+    return _roi;
+}
+
+float  KCFTracker::templateMatch(cv::Mat &des)
+{
+    return 0;
+}
 
 // Detect object in the current frame.
 cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
@@ -291,7 +374,6 @@ void KCFTracker::train(cv::Mat x, float train_interp_factor)
     _den = (1 - train_interp_factor) * _den + (train_interp_factor) * den;
 
     _alphaf = complexDivision(_num, _den);*/
-
 }
 
 // Evaluates a Gaussian kernel with bandwidth SIGMA for all relative shifts between input images X and Y, which must both be MxN. They must    also be periodic (ie., pre-processed with a cosine window).

@@ -15,6 +15,9 @@ typedef struct __tagObj
     cv::Rect rect;
     int64_t  id;
     int  cateId;
+    int  dieNum;
+    int  status;
+    float trackTh;
 }OBJ_T;
 
 class Tracker_Wrapper
@@ -76,28 +79,50 @@ public:
             return 0;
         
         int idx = -1;
-        for (int i=0; i<m_maxObj; i++)
-        {
-            if (m_objs[i].id < 0)
-            {
-                idx = i;
-                break;
-            }
-        }
-        if (-1 == idx)
-            return 0;
+        int flag = isAlreadyIn(roi_s, idx, cateId);
         
-        if (1 == isAlreadyIn(roi_s))
+        if (1 == flag)
             return 0;
 
-        if (0 != m_tracker[idx])
-            delete m_tracker[idx];
-        m_tracker[idx] = new KCFTracker(true, true,
-                                        true, true);
-        m_tracker[idx]->init(roi_s, m_frame);
-        m_objs[idx].rect = roi_s;
-        m_objs[idx].id = ++m_curId;
-        m_objs[idx].cateId = cateId;
+        if (2==flag)
+        {
+            float th = 0;
+            cv::Rect res = m_tracker[idx]->trackbydetect(m_frame, th,
+                                          roi_s);
+            if (th > 0.2)
+            {
+                m_objs[idx].status = 1;
+                m_objs[idx].dieNum = 0;
+                m_objs[idx].trackTh = th;
+                m_objs[idx].rect = res;
+            }
+        }
+        else
+        {
+            for (int i=0; i<m_maxObj; i++)
+            {
+                if (m_objs[i].id < 0)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+            if (-1 == idx)
+                return 0;
+            
+            if (0 != m_tracker[idx])
+                delete m_tracker[idx];
+            m_tracker[idx] = new KCFTracker(true, true,
+                                            true, true);
+            m_tracker[idx]->init(roi_s, m_frame);
+            m_objs[idx].rect = roi_s;
+            
+            m_objs[idx].id = ++m_curId;
+            m_objs[idx].cateId = cateId;
+            m_objs[idx].status = 1;
+            m_objs[idx].dieNum = 0;
+            m_objs[idx].trackTh = 1;
+        }
         return 0;
     }
     
@@ -107,6 +132,7 @@ public:
         {
             if (0 != m_tracker[i])
             {
+#if 0
                 float th=0;
                 cv::Rect res=m_tracker[i]->update(m_frame,
                                                   th);
@@ -118,6 +144,38 @@ public:
                 }
                 else
                     m_objs[i].rect = res;
+#else
+                //judge is the object is valid
+                if (m_objs[i].dieNum>=10)
+                {
+                    m_objs[i].id = -1;
+                    delete m_tracker[i];
+                    m_tracker[i] = 0;
+                    continue;
+                }
+                // If untracked, only wake by detect
+                if (0==m_objs[i].status)
+                {
+                    m_objs[i].dieNum += 1;
+                    continue;
+                }
+                float th=0;
+                cv::Rect res=m_tracker[i]->update(m_frame,
+                                                  th);
+                m_objs[i].rect = res;
+                m_objs[i].trackTh =th;
+
+                if (th < 0.2f)
+                {
+                    m_objs[i].dieNum += 1;
+                    m_objs[i].status = 0;
+                }
+                else
+                {
+                    m_objs[i].dieNum = 0;
+                    m_objs[i].status = 1;
+                }
+#endif
             }
         }
         return 0;
@@ -164,7 +222,7 @@ public:
     }
     
 private:
-    int isAlreadyIn(cv::Rect &roi)
+    int isAlreadyIn(cv::Rect &roi, int &idx, int cateId)
     {
         float size_roi = roi.width*roi.height;
         for (int i=0; i<m_maxObj; i++)
@@ -183,9 +241,18 @@ private:
 
                 float size_in  = (xmax-xmin)*(ymax-ymin);
                 float size_obj = m_objs[i].rect.width * m_objs[i].rect.height;
+
+                if ((cateId==m_objs[i].cateId)&&(0==m_objs[i].status))
+                {
+                    idx = i;
+                    return 2;
+                }
                 if ((size_in/size_obj > 0.5) ||
                     (size_in/size_roi > 0.5))
+                {
+                    idx = i;
                     return 1;
+                }
             }         
         }
         return 0;
@@ -291,7 +358,7 @@ int main(int argc, char* argv[]){
 
         if (eles.size()<1)
             break;
-        
+
         frame = cv::imread(eles[0].c_str());
         if (frame.empty())
             break;
@@ -339,6 +406,8 @@ int main(int argc, char* argv[]){
         {
             OBJ_T obj;
             tracker.object(i, obj);
+            if (1!=obj.status)
+                continue;
             fprintf(fOut, ",%d,%d,%d,%d,%d,%d",
                     obj.rect.x, obj.rect.y,
                     obj.rect.width+obj.rect.x-1,
