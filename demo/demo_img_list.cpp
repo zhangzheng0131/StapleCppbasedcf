@@ -117,7 +117,7 @@ public:
             m_tracker[idx]->init(roi_s, m_frame);
             m_objs[idx].rect = roi_s;
             
-            m_objs[idx].id = ++m_curId;
+            m_objs[idx].id = m_curId++;
             m_objs[idx].cateId = cateId;
             m_objs[idx].status = 1;
             m_objs[idx].dieNum = 0;
