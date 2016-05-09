@@ -347,7 +347,7 @@ int main(int argc, char* argv[]){
         return -1;
     
     std::string line, name;
-    cv::Mat frame;
+    cv::Mat frame, copy;
     double beg, end, total_time=0;
     int process_num=0;
     while(!fileList.eof())
@@ -423,11 +423,18 @@ int main(int argc, char* argv[]){
                             cv::FONT_HERSHEY_SIMPLEX, 0.5,
                             cv::Scalar(255,0,0), 1, 8);
             
-                cv::ellipse(frame,
-                            cv::RotatedRect(cv::Point(obj.rect.x+obj.rect.width/2,
-                                                      obj.rect.y+obj.rect.height/2),
-                                            cv::Size(obj.rect.width, obj.rect.height), 0),
-                            cv::Scalar(255,0,0),2, 8);
+                // cv::ellipse(frame,
+                //             cv::RotatedRect(cv::Point(obj.rect.x+obj.rect.width/2,
+                //                                       obj.rect.y+obj.rect.height/2),
+                //                             cv::Size(obj.rect.width, obj.rect.height), 0),
+                //             cv::Scalar(255,0,0),2, 8);
+
+                copy = frame.clone();
+                cv::circle(copy,
+                           cv::Point(obj.rect.x+obj.rect.width/2,
+                                     obj.rect.y+obj.rect.height/2),
+                           12,cv::Scalar(0,255,0), -1);
+                cv::addWeighted(copy, 0.3, frame, 1-0.3, 0, frame);
             }
         }
         if (1==isSave)

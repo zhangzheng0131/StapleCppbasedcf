@@ -153,7 +153,7 @@ int main(int argc, char* argv[]){
         {
             float th = 0;
             cv::Rect result = tracker.update(frame, th);
-            if (th < 0.1f)
+            if (th < 0.15f)
             {
                 isUpdate = false;
             }
