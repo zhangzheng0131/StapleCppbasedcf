@@ -4,10 +4,9 @@
 #include <algorithm>
 
 #include <opencv2/opencv.hpp>
-#include "kcftracker.hpp"
+#include "al_tracker.h"
 #include "log.h"
 #include "comdef.h"
-
 
 bool isUpdate = false;
 bool isSelecting = false;
@@ -76,26 +75,24 @@ int usage()
     printf("Usage::");
     printf("\t./demo_video [Paras] [Video.mp4]\n");
     printf("Paras::\n");
-    printf("\tf: Feature name [lab ,hog]. Default lab\n");
+    printf("\tm: method mode [0:KCF]. Default 0\n");
     printf("\th: Print the help information\n");
     return 0;
 }
 
-
 int main(int argc, char* argv[]){
-
     // Parse the options
-    char opts[] = "hf:";
+    char opts[] = "hm:";
     char oc;
-    std::string feaName="lab";
+    int method = 0;
     while((oc = getopt_t(argc, argv, opts)) != -1)
     {
         switch(oc)
         {
         case 'h':
             return usage();
-        case 'f':
-            feaName = getarg_t();
+        case 'm':
+            method = atoi(getarg_t());
             break;
         }
     }
@@ -109,22 +106,17 @@ int main(int argc, char* argv[]){
 
     if (!g_cap.isOpened())
         return -1;
-            
-	bool HOG = false;
-	bool FIXEDWINDOW = false;
-	bool MULTISCALE = true;
-	bool LAB = false;
 
-    if (feaName.compare("hog") == 0)
-        HOG = true;
-    else if (feaName.compare("lab") == 0)
+	// Create Tracker object
+    Image_T img;
+    memset(&img, 0, sizeof(Image_T));
+    OTHandle handle = ot_create(640, 480, 10, method);
+    if (0 == handle)
     {
-        HOG = true;
-        LAB = true;
+        fprintf(stderr, "Create handle failed\n");
+        return -1;
     }
     
-	// Create KCFTracker object
-	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
     cv::Mat frame, show;
     cv::namedWindow("Tracker", 0 );
     cv::setMouseCallback("Tracker", onMouse, &show);    
@@ -141,30 +133,40 @@ int main(int argc, char* argv[]){
         
         //Do Tracking        
         beg = timeStamp();
+        img.format = IMG_FMT_BGRBGR;
+        img.pitch[0] = frame.cols*3;
+        img.width = frame.cols;
+        img.height = frame.rows;
+        img.nPlane = 1;
+        img.data[0] = (unsigned char *)frame.data;
+        
+        ot_setImage(handle, &img);        
         if (isNewObj)
         {
-            tracker.init(newObj, frame);
+            Rect_T roi = {newObj.x, newObj.y,
+                          newObj.width, newObj.height};
+            ot_addObject(handle, &roi, 0);
             isNewObj = false;
             isUpdate = true;
 		}
 		
-
         if (isUpdate)
         {
             float th = 0;
-            cv::Rect result = tracker.update(frame, th);
-            if (th < 0.15f)
+            int count = ot_update(handle);
+            ot_update(handle);
+            for (int i=0; i<count; i++)
             {
-                isUpdate = false;
+                Rect_T roi;
+                ot_object(handle, i, &roi, 0, 0, 0);
+                cv::rectangle(show,
+                              cv::Point(roi.x, roi.y),
+                              cv::Point(roi.x+roi.w,
+                                        roi.y+roi.h),
+                              cv::Scalar(0, 255, 255),1,8);
             }
-            cv::rectangle(show,
-                          cv::Point(result.x, result.y),
-                          cv::Point(result.x+result.width,
-                                    result.y+result.height),
-                          cv::Scalar( 0, 255, 255 ),1,8);
         }
-        
-        
+            
         // Show the FPS
         end = timeStamp();   
         char str[50]={0};
@@ -172,10 +174,10 @@ int main(int argc, char* argv[]){
         cv::putText(show, str, cv::Point(20,30), 
                     cv::FONT_HERSHEY_SIMPLEX, 1,
                     cv::Scalar(255,0,0), 2, 8);
-
+        
         //End Tracking
         if (isSelecting || isNewObj)            
-            cv::rectangle(show, newObj, cv::Scalar(255,0,0));
+            cv::rectangle(show,newObj,cv::Scalar(255,0,0));
         cv::imshow( "Tracker", show);
         char c = (char)cv::waitKey(10);
         if(27==c || 'q'==c)
@@ -183,5 +185,6 @@ int main(int argc, char* argv[]){
         else if ('p'==c || 32==c)
             paused = !paused;
     }
-    
+    ot_destroy(&handle);
+    return 0;
 }

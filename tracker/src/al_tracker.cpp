@@ -1,0 +1,76 @@
+#include "al_tracker.h"
+#include "tracker.hpp"
+#include "kcftracker.hpp"
+
+OT_EXPORTS OTHandle ot_create(int maxSide,
+                              int minSide,
+                              int maxObjNum,
+                              int method)
+{
+    Tracker *handle = 0;
+    if (0==method)
+        handle = new KCFTracker(maxSide,
+                                minSide,
+                                maxObjNum);
+    
+    if (0 != handle->init())
+    {
+        delete handle;
+        return 0;
+    }
+    return (OTHandle)(handle);
+}
+
+OT_EXPORTS int  ot_setImage(OTHandle handle,
+                            Image_T *img)
+{
+    Tracker *pH = (Tracker *)(handle);
+    return pH->setImage(*img);
+}
+
+OT_EXPORTS int  ot_addObject(OTHandle handle,
+                             Rect_T *pRect,
+                             int cate_id)
+{
+    Tracker *pH = (Tracker *)(handle);
+    return pH->add(*pRect, cate_id);
+}
+
+OT_EXPORTS int  ot_update(OTHandle handle)
+{
+    Tracker *pH = (Tracker *)(handle);
+    return pH->update();
+}
+
+OT_EXPORTS int  ot_object(OTHandle handle,
+                          unsigned int idx,
+                          Rect_T *pRect,
+                          int    *pObjId,
+                          int    *pCateId,
+                          float  *pConf)
+{
+    Tracker *pH = (Tracker *)(handle);
+    Object_T obj;
+    if (0 != pH->object(idx, obj))
+        return -1;
+
+    *pRect = obj.roi;
+    if(0 != pObjId)
+        *pObjId = obj.obj_id;
+    if(0 != pCateId)
+        *pCateId = obj.cate_id;
+    if(0 != pConf)
+        *pConf = obj.conf;
+    return 0;
+}
+
+OT_EXPORTS void ot_destroy(OTHandle *pHandle)
+{
+    Tracker **ppH = (Tracker **)pHandle;
+    if (0 != ppH)
+    {
+        if (0 != *ppH)
+            delete (*ppH);
+        *ppH = 0;
+    }
+}
