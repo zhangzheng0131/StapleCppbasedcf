@@ -77,6 +77,10 @@ int main(int argc, char* argv[]){
         if (frame.empty())
             break;
 
+        //char path[1024]={0};
+        //sprintf(path, "%s.BMP", eles[0].c_str());
+        //imwrite(path, frame);
+        //continue;
         beg = timeStamp();   
         img.format = IMG_FMT_BGRBGR;
         img.pitch[0] = frame.cols*3;
@@ -94,6 +98,7 @@ int main(int argc, char* argv[]){
                            int(atof(eles[4].c_str()))};
             ot_addObject(handle, &roi, 0);
             isUpdate = true;
+            continue;
         }
 
         if (isUpdate)

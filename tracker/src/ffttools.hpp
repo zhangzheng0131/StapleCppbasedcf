@@ -16,15 +16,37 @@ namespace FFTTools
 {
 // Previous declarations, to avoid warnings
 cv::Mat fftd(cv::Mat img, bool backwards = false);
+cv::Mat fftd1d(cv::Mat img, int dim, bool backwards=false);
 cv::Mat real(cv::Mat img);
 cv::Mat imag(cv::Mat img);
 cv::Mat magnitude(cv::Mat img);
 cv::Mat complexMultiplication(cv::Mat a, cv::Mat b);
+cv::Mat complexConjMult(cv::Mat a, cv::Mat b);
+cv::Mat complexSelfConjMult(cv::Mat a);
 cv::Mat complexDivision(cv::Mat a, cv::Mat b);
 void rearrange(cv::Mat &img);
 void normalizedLogTransform(cv::Mat &img);
 
 
+cv::Mat fftd1d(cv::Mat img, int dim, bool backwards)
+{
+    if (img.channels() == 1)
+    {
+        cv::Mat planes[] = {cv::Mat_<float> (img), cv::Mat_<float>::zeros(img.size())};
+        //cv::Mat planes[] = {cv::Mat_<double> (img), cv::Mat_<double>::zeros(img.size())};
+        cv::merge(planes, 2, img);
+    }
+    if (0==dim)
+        cv::dft(img, img, backwards ? (cv::DFT_ROWS|cv::DFT_INVERSE | cv::DFT_SCALE) : cv::DFT_ROWS );
+    else
+    {
+        img = img.t();
+        cv::dft(img, img, backwards ? (cv::DFT_ROWS|cv::DFT_INVERSE | cv::DFT_SCALE) : cv::DFT_ROWS );
+        img = img.t();
+    }
+    return img;
+}
+    
 cv::Mat fftd(cv::Mat img, bool backwards)
 {
 /*
@@ -128,6 +150,28 @@ cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)
     cv::Mat res;
     cv::merge(pres, res);
 
+    return res;
+}
+
+cv::Mat complexConjMult(cv::Mat a, cv::Mat b)
+{
+    std::vector<cv::Mat> pa;
+    std::vector<cv::Mat> pb;
+    cv::split(a, pa);
+    cv::split(b, pb);
+    std::vector<cv::Mat> pres;
+    pres.push_back(pa[0].mul(pb[0]) + pa[1].mul(pb[1]));
+    pres.push_back(pa[0].mul(pb[1]) - pa[1].mul(pb[0]));
+    cv::Mat res;
+    cv::merge(pres, res);
+    return res;
+}
+
+cv::Mat complexSelfConjMult(cv::Mat a)
+{
+    std::vector<cv::Mat> pa;
+    cv::split(a, pa);
+    cv::Mat res = pa[0].mul(pa[0]) + pa[1].mul(pa[1]);
     return res;
 }
 

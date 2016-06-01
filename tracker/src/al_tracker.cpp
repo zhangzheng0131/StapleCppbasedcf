@@ -1,7 +1,8 @@
 #include "al_tracker.h"
 #include "tracker.hpp"
 #include "kcftracker.hpp"
-
+#include "dssttracker.hpp"
+#include "stapletracker.hpp"
 OT_EXPORTS OTHandle ot_create(int maxSide,
                               int minSide,
                               int maxObjNum,
@@ -9,9 +10,9 @@ OT_EXPORTS OTHandle ot_create(int maxSide,
 {
     Tracker *handle = 0;
     if (0==method)
-        handle = new KCFTracker(maxSide,
-                                minSide,
-                                maxObjNum);
+        handle = new StapleTracker(maxSide,
+                                   minSide,
+                                   maxObjNum);
     
     if (0 != handle->init())
     {
