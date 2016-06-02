@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
         img.nPlane = 1;
         img.data[0] = (unsigned char *)frame.data;
         
-        ot_setImage(handle, &img);        
+        ot_setImage(handle, &img);
         if (isNewObj)
         {
             Rect_T roi = {newObj.x, newObj.y,
@@ -149,12 +149,10 @@ int main(int argc, char* argv[]){
             isNewObj = false;
             isUpdate = true;
 		}
-		
         if (isUpdate)
         {
             float th = 0;
             int count = ot_update(handle);
-            ot_update(handle);
             for (int i=0; i<count; i++)
             {
                 Rect_T roi;
@@ -168,7 +166,7 @@ int main(int argc, char* argv[]){
         }
             
         // Show the FPS
-        end = timeStamp();   
+        end = timeStamp();
         char str[50]={0};
         sprintf(str,"Time: %0.2f ms", (end-beg)/1000);
         cv::putText(show, str, cv::Point(20,30), 

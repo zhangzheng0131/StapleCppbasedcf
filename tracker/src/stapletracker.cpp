@@ -162,15 +162,15 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     if (1 == isAlreadyIn(roi_s))
         return 0;
 
-    float pad = (roi_s.w+roi_s.h)/2;
-    int bg_w, bg_h, fg_w, fg_h;
+    float pad = (roi_s.w+roi_s.h)/2.f;
+    float bg_w, bg_h, fg_w, fg_h;
     bg_w = round(roi_s.w+pad);
     bg_h = round(roi_s.h+pad);
     float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
-    bg_w = round((int(int(round(bg_w*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale);
-    bg_h = round((int(int(round(bg_h*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale);
-    fg_w = round(roi_s.w-pad*m_trans_inner_padding);
-    fg_h = round(roi_s.h-pad*m_trans_inner_padding);
+    bg_w = (int(int(round(bg_w*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale;
+    bg_h = (int(int(round(bg_h*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale;
+    fg_w = roi_s.w-pad*m_trans_inner_padding;
+    fg_h = roi_s.h-pad*m_trans_inner_padding;
     
     m_cfs[idx].pos[0] = roi_s.x + roi_s.w/2;
     m_cfs[idx].pos[1] = roi_s.y + roi_s.h/2;
@@ -231,7 +231,7 @@ int StapleTracker::update()
             m_objs[i].status = -1;
             continue;
         }
-            
+
         detectScaleCF(i, conf);
         if (conf < 0.15f)
         {
@@ -400,8 +400,8 @@ cv::Mat StapleTracker::getSubWin(int idx)
     cv::Rect roi;
     float cx = m_cfs[idx].pos[0];
     float cy = m_cfs[idx].pos[1];    
-    roi.width = m_cfs[idx].bg_size[0];
-    roi.height = m_cfs[idx].bg_size[1];
+    roi.width = round(m_cfs[idx].bg_size[0]);
+    roi.height = round(m_cfs[idx].bg_size[1]);
     roi.x = round(cx - roi.width/2.f);
     roi.y = round(cy - roi.height/2.f);
     int bg_w = round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
@@ -726,21 +726,22 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
     else if(m_cfs[idx].scale_adapt > m_cfs[idx].scale_max_factor)
         m_cfs[idx].scale_adapt= m_cfs[idx].scale_max_factor;
 
-    int bg_w, bg_h, fg_w, fg_h;
-    float tz_w = m_cfs[idx].base_tz[0]*m_cfs[idx].scale_adapt;
-    float tz_h = m_cfs[idx].base_tz[1]*m_cfs[idx].scale_adapt;
+    float tz_w, tz_h, bg_w, bg_h, fg_w, fg_h;
+    tz_w = m_cfs[idx].base_tz[0]*m_cfs[idx].scale_adapt;
+    tz_h = m_cfs[idx].base_tz[1]*m_cfs[idx].scale_adapt;
     float pad = (tz_w+tz_h)/2.f;
-    bg_w = round(tz_w+pad);
-    bg_h = round(tz_h+pad);
-    float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
 
-    int pre_norm_bg_w = round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
-    int pre_norm_bg_h = round(m_cfs[idx].bg_size[1]*m_cfs[idx].scale);
-    bg_w = round(pre_norm_bg_w/scale);
-    bg_h = round(pre_norm_bg_h/scale);
-    fg_w = round(tz_w-pad*m_trans_inner_padding);
-    fg_h = round(tz_h-pad*m_trans_inner_padding);
-    
+    bg_w = tz_w+pad;
+    bg_h = tz_h+pad;
+    float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
+    int pre_norm_bg_w=round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
+    int pre_norm_bg_h=round(m_cfs[idx].bg_size[1]*m_cfs[idx].scale);
+    bg_w = pre_norm_bg_w/scale;
+    bg_h = pre_norm_bg_h/scale;
+    fg_w = tz_w-pad*m_trans_inner_padding;
+    fg_h = tz_h-pad*m_trans_inner_padding;
+
+    // Apply the new value
     m_cfs[idx].target_size[0] = round(tz_w);
     m_cfs[idx].target_size[1] = round(tz_h);
     m_cfs[idx].bg_size[0] = bg_w;

@@ -20,8 +20,8 @@ typedef struct tagStapleMats
     float pos[2];
     int target_size[2];
     int base_tz[2];
-    int bg_size[2];
-    int fg_size[2];
+    float bg_size[2];
+    float fg_size[2];
     int norm_delta_size;
     float scale;
 
