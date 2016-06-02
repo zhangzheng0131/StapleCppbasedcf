@@ -75,7 +75,7 @@ int usage()
     printf("Usage::");
     printf("\t./demo_video [Paras] [Video.mp4]\n");
     printf("Paras::\n");
-    printf("\tm: method mode [0:KCF]. Default 0\n");
+    printf("\tm: method mode [0:Staple, 1:KCF]. Default 0\n");
     printf("\th: Print the help information\n");
     return 0;
 }

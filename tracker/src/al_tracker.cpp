@@ -13,7 +13,12 @@ OT_EXPORTS OTHandle ot_create(int maxSide,
         handle = new StapleTracker(maxSide,
                                    minSide,
                                    maxObjNum);
-    
+    // else if(1==method)
+    //     handle = new KCFTracker(maxSide,
+    //                             minSide,
+    //                             maxObjNum);
+    else
+        return 0;
     if (0 != handle->init())
     {
         delete handle;

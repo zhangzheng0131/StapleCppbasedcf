@@ -14,7 +14,7 @@ int usage()
     printf("\t./demo_video [Paras] img.lst\n");
     printf("Paras::\n");
     printf("\ts: Save the video result\n");
-    printf("\tm: method mode [0:KCF]. Default 0\n");
+    printf("\tm: method mode [0:Staple, 1:KCF]. Default 0\n");
     printf("\th: Print the help information\n");
     return 0;
 }

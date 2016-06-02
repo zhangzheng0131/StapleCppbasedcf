@@ -73,7 +73,7 @@ protected:
                       cv::Mat &roiImg,
                       float lr, bool isInit=false);
 
-    int detectTrans(int idx);
+    int detectTrans(int idx, float &conf);
     cv::Mat detectTransCF(int idx, cv::Mat &roiImg);
     cv::Mat detectTransPWP(int idx, cv::Mat &roiImg);
     Rect_T getShowRect(int idx);
@@ -82,7 +82,7 @@ protected:
     cv::Mat getScaleFeaCF(int idx);
     int getOneScaleFeaCF(cv::Mat &roiImg, cv::Mat &feaHog);
     int trainScaleCF(int idx, float lr, bool isInit=false);
-    int detectScaleCF(int idx);
+    int detectScaleCF(int idx, float &conf);
     
     
 private:

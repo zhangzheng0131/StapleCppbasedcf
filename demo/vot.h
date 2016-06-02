@@ -336,10 +336,18 @@ public:
     float get_width() const { return _region->width; }
     float get_height() const { return _region->height; }
 
-    float set_x(float x) { _region->x = x; }
-    float set_y(float y) { _region->y = y; }
-    float set_width(float width) { _region->width = width; }
-    float set_height(float height) { _region->height = height; }
+    float set_x(float x) { _region->x = x; return x;}
+    float set_y(float y) { _region->y = y; return y;}
+    float set_width(float width)
+    {
+        _region->width = width;
+        return width;        
+    }
+    float set_height(float height)
+    {
+        _region->height = height;
+        return height;
+    }
 
 #endif
 

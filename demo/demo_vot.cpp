@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include <opencv2/opencv.hpp>
-#include "kcftracker.hpp"
+#include "al_tracker.h"
 #include "log.h"
 #include "comdef.h"
 #define VOT_RECTANGLE
@@ -15,7 +15,7 @@ int usage()
     printf("Usage::");
     printf("\t./demo_video [Paras]\n");
     printf("Paras::\n");
-    printf("\tf: Feature name [lab ,hog]. Default lab\n");
+    printf("\tm: method mode [0:Staple, 1:KCF]. Default 0\n");
     printf("\th: Print the help information\n");
     return 0;
 }
@@ -24,43 +24,41 @@ int usage()
 int main(int argc, char* argv[]){
 
     // Parse the options
-    char opts[] = "hf:";
+    char opts[] = "hm:";
     char oc;
-    std::string feaName="lab";
+    int method = 0;
     while((oc = getopt_t(argc, argv, opts)) != -1)
     {
         switch(oc)
         {
         case 'h':
             return usage();
-        case 'f':
-            feaName = getarg_t();
+        case 'm':
+            method = atoi(getarg_t());
             break;
         }
     }
     argv += getpos_t();
     argc -= getpos_t();
-    
-	bool HOG = false;
-	bool FIXEDWINDOW = false;
-	bool MULTISCALE = true;
-	bool LAB = false;
 
-    if (feaName.compare("hog") == 0)
-        HOG = true;
-    else if (feaName.compare("lab") == 0)
-    {
-        HOG = true;
-        LAB = true;
-    }
-    
-	// Create KCFTracker object
+    Image_T img;
+    memset(&img, 0, sizeof(Image_T));
+    OTHandle handle = ot_create(640, 480, 5, method);
     VOT vot;
-	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
-    cv::Rect roi;
-    roi << vot.region();
-    cv::Mat image = cv::imread(vot.frame());
-    tracker.init(roi, image);
+    cv::Rect initRoi;
+    initRoi << vot.region();
+    cv::Mat frame = cv::imread(vot.frame());
+    img.format = IMG_FMT_BGRBGR;
+    img.pitch[0] = frame.cols*3;
+    img.width = frame.cols;
+    img.height = frame.rows;
+    img.nPlane = 1;
+    img.data[0] = (unsigned char *)frame.data;
+    ot_setImage(handle, &img);
+
+    Rect_T roi_t = {initRoi.x, initRoi.y,
+                    initRoi.width, initRoi.height};
+    ot_addObject(handle, &roi_t, 0);
     
     while (!vot.end()) {
 
@@ -68,9 +66,28 @@ int main(int argc, char* argv[]){
 
         if (imagepath.empty()) break;
 
-        cv::Mat image = cv::imread(imagepath);
-        float th = 0;
-        cv::Rect res = tracker.update(image, th);
+        frame = cv::imread(imagepath);
+        img.format = IMG_FMT_BGRBGR;
+        img.pitch[0] = frame.cols*3;
+        img.width = frame.cols;
+        img.height = frame.rows;
+        img.nPlane = 1;
+        img.data[0] = (unsigned char *)frame.data;
+        ot_setImage(handle, &img);
+
+        int count = ot_update(handle);
+        Rect_T roi;
+        if (count > 0) 
+            ot_object(handle, 0, &roi, 0, 0, 0);
+        else
+        {
+            roi.x = 0;
+            roi.y = 0;
+            roi.w = 1;
+            roi.h = 1;
+        }
+        cv::Rect res = cv::Rect(roi.x, roi.y, roi.w, roi.h);
         vot.report(res);
-    }    
+    }
+    return 0;
 }

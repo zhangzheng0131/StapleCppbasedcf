@@ -493,6 +493,13 @@ void change_format(float *des,float *source,int height,int width,int channel){
                 des[k*height*width+j*height+i] = source[i*width*channel+j*channel+k];
 }
 
+void trans_hog(float *des,float *source,int height,int width,int channel){
+    for(int i = 0;i < height-1;i ++)
+        for(int j = 0;j < width;j ++)
+            for(int k = 0;k < channel;k ++)
+                des[k*(height-1)*width+j*(height-1)+i] = source[i*width*channel+j*channel+k];
+}
+
 cv::Mat fhog(const cv::Mat& input, int binSize, int nOrients, float clip, bool crop){
     int HEIGHT = input.rows;
     int WIDTH = input.cols;
@@ -511,10 +518,16 @@ cv::Mat fhog(const cv::Mat& input, int binSize, int nOrients, float clip, bool c
     change_format(I,II,HEIGHT,WIDTH,DEPTH);
     int h,w,d;
     float* HH = fhog(I,HEIGHT,WIDTH,DEPTH,&h,&w,&d,binSize,nOrients,clip,crop);
+
+#if 0
     float* H = new float[h*w*d];
     change_format(H,HH,d,w,h);
-
     cv::Mat fhog_feature(h,w,CV_32FC(32),H);
+#else
+    float* H = new float[h*w*(d-1)];
+    trans_hog(H,HH,d,w,h);
+    cv::Mat fhog_feature(h,w,CV_32FC(31),H);
+#endif
     delete []II;
     delete []I;
     delete []HH;

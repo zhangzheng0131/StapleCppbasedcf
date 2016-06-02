@@ -166,6 +166,9 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     int bg_w, bg_h, fg_w, fg_h;
     bg_w = round(roi_s.w+pad);
     bg_h = round(roi_s.h+pad);
+    float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
+    bg_w = round((int(int(round(bg_w*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale);
+    bg_h = round((int(int(round(bg_h*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale);
     fg_w = round(roi_s.w-pad*m_trans_inner_padding);
     fg_h = round(roi_s.h-pad*m_trans_inner_padding);
     
@@ -179,7 +182,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     m_cfs[idx].bg_size[1] = bg_h;
     m_cfs[idx].fg_size[0] = fg_w;
     m_cfs[idx].fg_size[1] = fg_h;
-    m_cfs[idx].scale=sqrt(m_trans_fixed_area/(bg_w*bg_h));
+    m_cfs[idx].scale=scale;
     float radius = MIN_T((bg_w-roi_s.w)*m_cfs[idx].scale,
                          (bg_h-roi_s.h)*m_cfs[idx].scale);
     m_cfs[idx].norm_delta_size = 2*floor(radius/2)+1;
@@ -220,12 +223,38 @@ int StapleTracker::update()
         if (-1 == m_objs[i].status)
             continue;
 
-        detectTrans(i);
-        detectScaleCF(i);
+        float conf;
+        detectTrans(i, conf);
+        if (conf < 0.15f)
+        {
+            printf("trans conf %f\n", conf);
+            m_objs[i].status = -1;
+            continue;
+        }
+            
+        detectScaleCF(i, conf);
+        if (conf < 0.15f)
+        {
+            printf("scale conf %f\n", conf);
+            m_objs[i].status = -1;
+            continue;
+        }
 
+        if (m_cfs[i].pos[0]<0 ||
+            m_cfs[i].pos[0]>m_img.width-1 ||
+            m_cfs[i].pos[1]<0 ||
+            m_cfs[i].pos[1]>m_img.height-1)
+        {
+            printf("img size: %d, %d pos: %f, %f\n",
+                   m_img.width, m_img.height,
+                   m_cfs[i].pos[0],
+                   m_cfs[i].pos[1]);
+            m_objs[i].status = -1;
+            continue;
+        }
         // get the show rect
         m_objs[i].roi = getShowRect(i);
-
+        
         // Update the trainning model
         cv::Mat roiImg;
         roiImg = getSubWin(i);
@@ -251,7 +280,7 @@ Rect_T StapleTracker::getShowRect(int idx)
     roi.h = MIN_T(m_img.height-roi.y-1, roi.h);
     return roi;
 }
-int StapleTracker::detectTrans(int idx)
+int StapleTracker::detectTrans(int idx, float &conf)
 {
     // Detect by translation CF
     cv::Mat roiImg = getSubWin(idx);
@@ -267,10 +296,10 @@ int StapleTracker::detectTrans(int idx)
     cv::Point2i pi;
     double pv;
     cv::minMaxLoc(resCF, NULL, &pv, NULL, &pi);
-    
     int center = (m_cfs[idx].norm_delta_size-1)/2;
     m_cfs[idx].pos[0] += (pi.x-center)/m_cfs[idx].scale;
     m_cfs[idx].pos[1] += (pi.y-center)/m_cfs[idx].scale;
+    conf = (float)pv;
     return 0;
 }
 
@@ -359,12 +388,10 @@ cv::Mat StapleTracker::getSubWinPWP(int idx)
                             CV_8UC3, m_img.data[0]);
     cv::Mat z = RectTools::subwindow(image, roi,
                                      cv::BORDER_REPLICATE);
-    z = z.clone();
-    
     if (z.cols!=norm_pwp_bg_w || z.rows!=norm_pwp_bg_h) 
-        //cv::resize(z, z, cv::Size(bg_w, bg_h),
-        //          0,0,cv::INTER_NEAREST );
-        resize(z,z,cv::Size(norm_pwp_bg_w,norm_pwp_bg_h));
+        cv::resize(z, z, cv::Size(norm_pwp_bg_w,
+                                  norm_pwp_bg_h));
+    //resize(z,z,cv::Size(norm_pwp_bg_w,norm_pwp_bg_h));
     return z;
 }
 
@@ -385,11 +412,9 @@ cv::Mat StapleTracker::getSubWin(int idx)
                             CV_8UC3, m_img.data[0]);
     cv::Mat z = RectTools::subwindow(image, roi,
                                      cv::BORDER_REPLICATE);
-    z = z.clone();
     if (z.cols != bg_w || z.rows != bg_h) 
-        //cv::resize(z, z, cv::Size(bg_w, bg_h),
-        //          0,0,cv::INTER_NEAREST );
-        resize(z, z, cv::Size(bg_w, bg_h));
+        cv::resize(z, z, cv::Size(bg_w, bg_h));
+    //resize(z, z, cv::Size(bg_w, bg_h));
     return z;
 }
 
@@ -398,8 +423,8 @@ int StapleTracker::getTransFeaCF(cv::Mat &roiImg,
 {
     //Get HOG Feature
     cv::Mat roiGray;
-    bgr2gray(roiImg, roiGray);
-    //cvtColor(z, z_gray, CV_BGR2GRAY);
+    //bgr2gray(roiImg, roiGray);
+    cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
     feaHog = fhog(roiGray, m_trans_cell_size);
     return 0;
 }
@@ -621,7 +646,8 @@ cv::Mat StapleTracker::cropTransResponseCF(int idx,
     }
 
     if (m_trans_cell_size > 1)
-        resize1C(newRes, newRes, cv::Size(m_cfs[idx].norm_delta_size,m_cfs[idx].norm_delta_size));
+        cv::resize(newRes, newRes, cv::Size(m_cfs[idx].norm_delta_size,m_cfs[idx].norm_delta_size));
+        //resize1C(newRes, newRes, cv::Size(m_cfs[idx].norm_delta_size,m_cfs[idx].norm_delta_size));
     return newRes;
 }
 
@@ -658,14 +684,13 @@ cv::Mat StapleTracker::cropTransResponsePWP(int idx,
     return newRes;
 }
 
-int StapleTracker::detectScaleCF(int idx)
+int StapleTracker::detectScaleCF(int idx, float &conf)
 {
     cv::Mat fea = getScaleFeaCF(idx);
     fea = FFTTools::fftd1d(fea, 1);
 
     cv::Mat resH = cv::Mat(cv::Size(m_scale_num, 1),
-                           CV_32FC2);
-    
+                           CV_32FC2);    
     float *ptr1, *ptr2, *ptr3, *ptr4;
     ptr1 = (float *)(resH.data);
     ptr2 = (float *)(fea.data);
@@ -692,20 +717,27 @@ int StapleTracker::detectScaleCF(int idx)
     cv::Point2i pi;
     double pv;
     cv::minMaxLoc(res, NULL, &pv, NULL, &pi);
+    conf = (float)pv;
+    
     float bestScale = m_scale_factors[pi.x];
     m_cfs[idx].scale_adapt *= bestScale;
-    
     if (m_cfs[idx].scale_adapt < m_cfs[idx].scale_min_factor)
         m_cfs[idx].scale_adapt=m_cfs[idx].scale_min_factor;
     else if(m_cfs[idx].scale_adapt > m_cfs[idx].scale_max_factor)
         m_cfs[idx].scale_adapt= m_cfs[idx].scale_max_factor;
 
     int bg_w, bg_h, fg_w, fg_h;
-    float tz_w=m_cfs[idx].base_tz[0]*m_cfs[idx].scale_adapt;
-    float tz_h=m_cfs[idx].base_tz[1]*m_cfs[idx].scale_adapt;
+    float tz_w = m_cfs[idx].base_tz[0]*m_cfs[idx].scale_adapt;
+    float tz_h = m_cfs[idx].base_tz[1]*m_cfs[idx].scale_adapt;
     float pad = (tz_w+tz_h)/2.f;
     bg_w = round(tz_w+pad);
     bg_h = round(tz_h+pad);
+    float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
+
+    int pre_norm_bg_w = round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
+    int pre_norm_bg_h = round(m_cfs[idx].bg_size[1]*m_cfs[idx].scale);
+    bg_w = round(pre_norm_bg_w/scale);
+    bg_h = round(pre_norm_bg_h/scale);
     fg_w = round(tz_w-pad*m_trans_inner_padding);
     fg_h = round(tz_h-pad*m_trans_inner_padding);
     
@@ -715,7 +747,7 @@ int StapleTracker::detectScaleCF(int idx)
     m_cfs[idx].bg_size[1] = bg_h;
     m_cfs[idx].fg_size[0] = fg_w;
     m_cfs[idx].fg_size[1] = fg_h;
-    m_cfs[idx].scale=sqrt(m_trans_fixed_area/(bg_w*bg_h));
+    m_cfs[idx].scale = scale;
     return 0;
 }
 
@@ -724,8 +756,8 @@ int StapleTracker::getOneScaleFeaCF(cv::Mat &roiImg,
 {
     //Get HOG Feature
     cv::Mat roiGray;
-    bgr2gray(roiImg, roiGray);
-
+    cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
+    //bgr2gray(roiImg, roiGray);
     // FILE *fid1 = fopen("./rgb.txt", "w");
     // FILE *fid2 = fopen("./gray.txt", "w");
     // uint8_t *data=(uint8_t *)(roiImg.data);
@@ -749,7 +781,6 @@ int StapleTracker::getOneScaleFeaCF(cv::Mat &roiImg,
     // }
     // fclose(fid2);
     
-    //cvtColor(z, z_gray, CV_BGR2GRAY);
     feaHog = fhog(roiGray, m_scale_cell_size);
     return 0;
 }
@@ -774,21 +805,11 @@ cv::Mat StapleTracker::getScaleFeaCF(int idx)
         roi.y = round(m_cfs[idx].pos[1] - roi.height/2.f);
         cv::Mat z=RectTools::subwindow(image, roi,
                                        cv::BORDER_REPLICATE);
-        z=z.clone();
-        // FILE *fid1 = fopen("./rgb_ori.txt", "w");
-        // uint8_t *data=(uint8_t *)(z.data);
-        // for (int h=0; h<z.rows; h++)
-        // {
-        //     for (int w=0; w<z.cols; w++)
-        //         fprintf(fid1, "%d, %d, %d, ", data[w*3+2],
-        //                 data[w*3+1], data[w*3]);
-        //     data += z.cols*3;
-        //     fprintf(fid1, "\n");
-        // }
-        // fclose(fid1);
         if (z.cols != m_cfs[idx].scale_norm_tz[0] || z.rows != m_cfs[idx].scale_norm_tz[1])
-            resize(z,z,cv::Size(m_cfs[idx].scale_norm_tz[0],
-                                m_cfs[idx].scale_norm_tz[1]));
+            cv::resize(z,z,cv::Size(m_cfs[idx].scale_norm_tz[0],
+                                    m_cfs[idx].scale_norm_tz[1]));
+        //resize(z,z,cv::Size(m_cfs[idx].scale_norm_tz[0],
+        //                      m_cfs[idx].scale_norm_tz[1]));
         getOneScaleFeaCF(z, feaTmp);
         feaTmp = feaTmp.reshape(1,1);
         feaTmp = feaTmp * m_scale_hann[i];
