@@ -326,8 +326,8 @@ cv::Mat StapleTracker::detectTransCF(int idx,
         {
             for (int w=0; w<feaCF.cols; w++)
             {
-                pRes[0]=pRes[0]+pA[0]*pFea[0]+pA[1]*pFea[1];
-                pRes[1]=pRes[1]+pA[0]*pFea[1]-pA[1]*pFea[0];
+                pRes[0] += pA[0]*pFea[0]+pA[1]*pFea[1];
+                pRes[1] += pA[0]*pFea[1]-pA[1]*pFea[0];
                 pRes += 2;
                 pFea += 2;
                 pA += stepCh;
