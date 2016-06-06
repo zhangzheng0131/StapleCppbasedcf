@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include <opencv2/opencv.hpp>
-#include "al_tracker.h"
+#include "al_ot.h"
 #include "log.h"
 #include "comdef.h"
 

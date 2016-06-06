@@ -16,8 +16,8 @@ else()
         PARENT_SCOPE)   
 endif() 
 
-include_directories(tracker/inc)
-add_subdirectory(tracker)
+include_directories(ot/inc)
+add_subdirectory(ot)
 
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     add_subdirectory(demo)
