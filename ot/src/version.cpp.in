@@ -1,0 +1,5 @@
+const char* od_version()
+{
+    static const char str[] = "$ot_version: v1.0.0_${GIT_COMMIT_HASH}$";
+    return str;
+}

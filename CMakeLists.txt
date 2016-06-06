@@ -16,6 +16,18 @@ else()
         PARENT_SCOPE)   
 endif() 
 
+### Generate the version cpp
+### Get the git commit hash code
+execute_process(COMMAND git log -1 --format=%h
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE GIT_COMMIT_HASH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/ot/src/version.cpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/ot/src/version.cpp)
+
+## APP Library
 include_directories(ot/inc)
 add_subdirectory(ot)
 
