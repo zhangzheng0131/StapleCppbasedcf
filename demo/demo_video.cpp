@@ -76,15 +76,17 @@ int usage()
     printf("\t./demo_video [Paras] [Video.mp4]\n");
     printf("Paras::\n");
     printf("\tm: method mode [0:Staple, 1:KCF]. Default 0\n");
+    printf("\ts: Enable Save the result \n");
     printf("\th: Print the help information\n");
     return 0;
 }
 
 int main(int argc, char* argv[]){
     // Parse the options
-    char opts[] = "hm:";
+    char opts[] = "hm:s";
     char oc;
     int method = 0;
+    bool isSave = false;
     while((oc = getopt_t(argc, argv, opts)) != -1)
     {
         switch(oc)
@@ -93,6 +95,9 @@ int main(int argc, char* argv[]){
             return usage();
         case 'm':
             method = atoi(getarg_t());
+            break;
+        case 's':
+            isSave = true;
             break;
         }
     }
@@ -107,6 +112,7 @@ int main(int argc, char* argv[]){
     if (!g_cap.isOpened())
         return -1;
 
+    cv::VideoWriter outputV;
 	// Create Tracker object
     Image_T img;
     memset(&img, 0, sizeof(Image_T));
@@ -130,6 +136,21 @@ int main(int argc, char* argv[]){
                 break;
         }
         frame.copyTo(show);   
+        if (isSave && (!outputV.isOpened()))
+        {
+            char path[1024] = {0};
+            sprintf(path,"%s_res.avi", argv[0]);
+            outputV.open(path,
+                         CV_FOURCC('M','J','P','G'),
+                         25,
+                         cv::Size(frame.cols, frame.rows),
+                         true);
+            if (!outputV.isOpened())
+            {
+                printf("Write video open failed\n");
+                return -1;
+            }
+        }
         
         //Do Tracking        
         beg = timeStamp();
@@ -169,10 +190,13 @@ int main(int argc, char* argv[]){
         end = timeStamp();
         char str[50]={0};
         sprintf(str,"Time: %0.2f ms", (end-beg)/1000);
+        if (!isSave)
         cv::putText(show, str, cv::Point(20,30), 
                     cv::FONT_HERSHEY_SIMPLEX, 1,
                     cv::Scalar(255,0,0), 2, 8);
-        
+
+        if (isSave)
+            outputV << show;
         //End Tracking
         if (isSelecting || isNewObj)            
             cv::rectangle(show,newObj,cv::Scalar(255,0,0));

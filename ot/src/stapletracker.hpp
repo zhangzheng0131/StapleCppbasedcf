@@ -4,6 +4,7 @@
 #include "opencv2/opencv.hpp"
 #include "tracker.hpp"
 
+#define ENABLE_SUB_PEAK
 typedef struct tagStapleMats
 {
     //TransCF

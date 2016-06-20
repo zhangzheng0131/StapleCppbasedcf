@@ -8,6 +8,7 @@
 #include "comdef.h"
 #include "integral.hpp"
 
+/*  Test API for Matlab
 static int bgr2gray(cv::Mat& ori, cv::Mat& dst)
 {
     dst = cv::Mat(cv::Size(ori.cols, ori.rows),
@@ -66,6 +67,16 @@ static int resize1C(cv::Mat &ori, cv::Mat &dst, cv::Size sz)
     
     dst = aa;
     return 0;
+}
+*/
+
+static float subPixelPeak(float left, float center, float right)
+{   
+    float divisor = 2*center - right - left;
+
+    if (divisor == 0)
+        return 0;
+    return 0.5 * (right-left)/divisor;
 }
 
 StapleTracker::StapleTracker(int maxSide, int minSide,
@@ -296,9 +307,23 @@ int StapleTracker::detectTrans(int idx, float &conf)
     cv::Point2i pi;
     double pv;
     cv::minMaxLoc(resCF, NULL, &pv, NULL, &pi);
+    cv::Point2f pf((float)pi.x, (float)pi.y);
+    
+#ifdef ENABLE_SUB_PEAK
+    if (pi.x>0 && pi.x<resCF.cols-1) {
+        pf.x += subPixelPeak(resCF.at<float>(pi.y, pi.x-1),
+                             pv,
+                             resCF.at<float>(pi.y, pi.x+1));
+    }
+    if (pi.y>0 && pi.y<resCF.rows-1) {
+        pf.y += subPixelPeak(resCF.at<float>(pi.y-1, pi.x),
+                             pv,
+                             resCF.at<float>(pi.y+1, pi.x));
+    }
+#endif
     int center = (m_cfs[idx].norm_delta_size-1)/2;
-    m_cfs[idx].pos[0] += (pi.x-center)/m_cfs[idx].scale;
-    m_cfs[idx].pos[1] += (pi.y-center)/m_cfs[idx].scale;
+    m_cfs[idx].pos[0] += (pf.x-center)/m_cfs[idx].scale;
+    m_cfs[idx].pos[1] += (pf.y-center)/m_cfs[idx].scale;
     conf = (float)pv;
     return 0;
 }
