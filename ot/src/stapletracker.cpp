@@ -229,24 +229,25 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
 int StapleTracker::update()
 {
     m_curObjNum = 0;
+    float train_th=0.15f, update_th=0.1f;
+    float confT, confS;
     for (int i=0 ;i<m_maxObjNum; i++)
     {
         if (-1 == m_objs[i].status)
             continue;
 
-        float conf;
-        detectTrans(i, conf);
-        if (conf < 0.15f)
+        detectTrans(i, confT);
+        if (confT < update_th)
         {
-            printf("trans conf %f\n", conf);
+            printf("trans conf %f\n", confT);
             m_objs[i].status = -1;
             continue;
         }
 
-        detectScaleCF(i, conf);
-        if (conf < 0.15f)
+        detectScaleCF(i, confS);
+        if (confS < update_th)
         {
-            printf("scale conf %f\n", conf);
+            printf("scale conf %f\n", confS);
             m_objs[i].status = -1;
             continue;
         }
@@ -267,11 +268,15 @@ int StapleTracker::update()
         m_objs[i].roi = getShowRect(i);
         
         // Update the trainning model
-        cv::Mat roiImg;
-        roiImg = getSubWin(i);
-        trainTransCF(i, roiImg, m_trans_lr_cf, false);
-        trainTransPWP(i, roiImg, m_trans_lr_pwp, false);
-        trainScaleCF(i, m_scale_lr, false);
+        if (confT > train_th)
+        {
+            cv::Mat roiImg;
+            roiImg = getSubWin(i);
+            trainTransCF(i, roiImg, m_trans_lr_cf, false);
+            trainTransPWP(i, roiImg, m_trans_lr_pwp,false);
+            if (confS > train_th)
+                trainScaleCF(i, m_scale_lr, false);
+        }
         m_curObjNum ++;
     }
     return m_curObjNum;
@@ -377,9 +382,9 @@ cv::Mat StapleTracker::detectTransPWP(int idx,
     {
         for (int w=0; w<res.cols; w++)
         {
-            int idx1 = pImg[0]/range;
-            int idx2 = pImg[1]/range;
-            int idx3 = pImg[2]/range;
+            int idx1 = pImg[w*3]/range;
+            int idx2 = pImg[w*3+1]/range;
+            int idx3 = pImg[w*3+2]/range;
             int idx = idx3*m_trans_color_bins*m_trans_color_bins+idx2*m_trans_color_bins+idx1;
             float fg = pFG[idx];
             float bg = pBG[idx];
@@ -387,8 +392,8 @@ cv::Mat StapleTracker::detectTransPWP(int idx,
                 *(pRes++) = 0;
             else
                 *(pRes++) = fg/(fg+bg);
-            pImg += 3;
         }
+        pImg += roiImg.step[0];
     }
     return res;
 }
@@ -537,14 +542,15 @@ int StapleTracker::trainTransPWP(int idx,
     {
         for (int w=0; w<bg_w; w++)
         {
-            int idx1 = pImg[0]/range;
-            int idx2 = pImg[1]/range;
-            int idx3 = pImg[2]/range;
+            int idx1 = pImg[w*3]/range;
+            int idx2 = pImg[w*3+1]/range;
+            int idx3 = pImg[w*3+2]/range;
             int idx = idx3*m_trans_color_bins*m_trans_color_bins+idx2*m_trans_color_bins+idx1;
             pBG[idx] += *(pBGMask++);
             pFG[idx] += *(pFGMask++);
-            pImg += 3;
         }
+        pImg += roiImg.step[0];
+        
     }
     histBg = histBg/(cv::sum(histBg)[0]);
     histFg = histFg/(cv::sum(histFg)[0]);
