@@ -1,5 +1,5 @@
 #include <math.h>
-#include "stapletracker.hpp"
+#include "kcftracker_exp.hpp"
 #include "ffttools.hpp"
 #include "recttools.hpp"
 #include "fhog.hpp"
@@ -8,7 +8,6 @@
 #include "comdef.h"
 #include "integral.hpp"
 
-/*  Test API for Matlab
 static int bgr2gray(cv::Mat& ori, cv::Mat& dst)
 {
     dst = cv::Mat(cv::Size(ori.cols, ori.rows),
@@ -25,52 +24,11 @@ static int bgr2gray(cv::Mat& ori, cv::Mat& dst)
             val = MIN_T(val, 255);
             dst.at<uint8_t>(h, w)=val;
         }
-        ptr += dst.cols*3;
+        ptr += ori.step[0];
     }
     return 0;
 }
-static int resize(cv::Mat &ori, cv::Mat &dst, cv::Size sz)
-{
-    cv::Mat aa = cv::Mat(sz, CV_8UC3);
 
-    double scaleY = ori.rows*1.0/sz.height;
-    double scaleX = ori.cols*1.0/sz.width;
-    for (int h=0; h<sz.height; h++)
-    {
-        int y = MIN_T(round((h+1-0.5)*scaleY+0.5)-1,ori.rows-1);
-        for (int w=0; w<sz.width; w++)
-        {
-            int x = MIN_T(round((w+1-0.5)*scaleX+0.5)-1,ori.cols-1);
-            aa.at<cv::Vec3b>(h,w) = ori.at<cv::Vec3b>(y,x);
-        }
-    }
-    
-    dst = aa;
-    return 0;
-}
-
-static int resize1C(cv::Mat &ori, cv::Mat &dst, cv::Size sz)
-{
-    cv::Mat aa = cv::Mat(sz, CV_32F);
-
-    double scaleY = ori.rows*1.0/sz.height;
-    double scaleX = ori.cols*1.0/sz.width;
-    for (int h=0; h<sz.height; h++)
-    {
-        int y = MIN_T(round((h+1-0.5)*scaleY+0.5)-1,ori.rows-1);
-        for (int w=0; w<sz.width; w++)
-        {
-            int x = MIN_T(round((w+1-0.5)*scaleX+0.5)-1,ori.cols-1);
-            aa.at<float>(h,w) = ori.at<float>(y,x);
-        }
-    }
-    
-    dst = aa;
-    return 0;
-}
-*/
-
-// According 3 points to get the peak of parabola
 static float subPixelPeak(float left, float center, float right)
 {   
     float divisor = 2*center - right - left;
@@ -80,8 +38,8 @@ static float subPixelPeak(float left, float center, float right)
     return 0.5 * (right-left)/divisor;
 }
 
-StapleTracker::StapleTracker(int maxSide, int minSide,
-                             int maxObjNum)
+KCFExpTracker::KCFExpTracker(int maxSide, int minSide,
+                       int maxObjNum)
     :Tracker(maxSide, minSide, maxObjNum)
 {
     m_trans_cell_size=4;
@@ -93,6 +51,8 @@ StapleTracker::StapleTracker(int maxSide, int minSide,
     m_trans_lambda = 1e-3f;
     m_trans_merge_factor = 0.3f;
     m_trans_y_sigma = 1.f/16;
+    //m_trans_y_sigma = 1.f/10;
+    m_trans_gauss_kernel_sigma = 0.5f;
     
     //Scale parameter 
     m_scale_num = 33;
@@ -106,7 +66,7 @@ StapleTracker::StapleTracker(int maxSide, int minSide,
     m_scale_factors = 0; 
 }
 
-int StapleTracker::init()
+int KCFExpTracker::init()
 {
     if (0!=Tracker::init())
         return -1;
@@ -121,12 +81,12 @@ int StapleTracker::init()
     return 0;
 }
 
-int StapleTracker::initTransCF()
+int KCFExpTracker::initTransCF()
 {
     return 0;
 }
 
-int StapleTracker::initScaleCF()
+int KCFExpTracker::initScaleCF()
 {
     if (0==m_scale_hann)
     {
@@ -159,7 +119,7 @@ int StapleTracker::initScaleCF()
     return 0;
 }
 
-int StapleTracker::add(Rect_T &roi, int cate_id)
+int KCFExpTracker::add(Rect_T &roi, int cate_id)
 {
     Rect_T roi_s, winR;
     roi_s.x = (int)(roi.x/m_scale);
@@ -183,7 +143,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     bg_h = (int(int(round(bg_h*scale))/m_trans_cell_size)/2*2+1)*m_trans_cell_size/scale;
     fg_w = roi_s.w-pad*m_trans_inner_padding;
     fg_h = roi_s.h-pad*m_trans_inner_padding;
-    
+
     m_cfs[idx].pos[0] = roi_s.x + roi_s.w/2;
     m_cfs[idx].pos[1] = roi_s.y + roi_s.h/2;
     m_cfs[idx].target_size[0] = roi_s.w;
@@ -227,16 +187,17 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     return 0;
 }
 
-int StapleTracker::update()
+int KCFExpTracker::update()
 {
     m_curObjNum = 0;
-    float train_th=0.15f, update_th=0.1f;
-    float confT, confS;
+    float train_th = 0.0f;
+    float update_th = 0.0f;
     for (int i=0 ;i<m_maxObjNum; i++)
     {
         if (-1 == m_objs[i].status)
             continue;
 
+        float confT;
         detectTrans(i, confT);
         if (confT < update_th)
         {
@@ -245,6 +206,7 @@ int StapleTracker::update()
             continue;
         }
 
+        float confS;
         detectScaleCF(i, confS);
         if (confS < update_th)
         {
@@ -269,13 +231,14 @@ int StapleTracker::update()
         m_objs[i].roi = getShowRect(i);
         
         // Update the trainning model
-        if (confT > train_th)
+        if (confT>train_th)
         {
             cv::Mat roiImg;
             roiImg = getSubWin(i);
             trainTransCF(i, roiImg, m_trans_lr_cf, false);
             trainTransPWP(i, roiImg, m_trans_lr_pwp,false);
-            if (confS > train_th)
+
+            if (confS>train_th)
                 trainScaleCF(i, m_scale_lr, false);
         }
         m_curObjNum ++;
@@ -283,7 +246,7 @@ int StapleTracker::update()
     return m_curObjNum;
 }
 
-Rect_T StapleTracker::getShowRect(int idx)
+Rect_T KCFExpTracker::getShowRect(int idx)
 {
     Rect_T roi;
     roi.x = m_cfs[idx].pos[0]-m_cfs[idx].target_size[0]/2;
@@ -297,19 +260,20 @@ Rect_T StapleTracker::getShowRect(int idx)
     roi.h = MIN_T(m_img.height-roi.y-1, roi.h);
     return roi;
 }
-int StapleTracker::detectTrans(int idx, float &conf)
+
+int KCFExpTracker::detectTrans(int idx, float &conf)
 {
     // Detect by translation CF
     cv::Mat roiImg = getSubWin(idx);
     cv::Mat resCF = detectTransCF(idx, roiImg);
     resCF = cropTransResponseCF(idx, resCF);
-
+    
     // Detect by translation PWP
     roiImg = getSubWinPWP(idx);
     cv::Mat resPWP = detectTransPWP(idx, roiImg);
     resPWP = cropTransResponsePWP(idx, resPWP);
-    
     resCF = 0.7f*resCF + 0.3f*resPWP;
+
     cv::Point2i pi;
     double pv;
     cv::minMaxLoc(resCF, NULL, &pv, NULL, &pi);
@@ -327,49 +291,29 @@ int StapleTracker::detectTrans(int idx, float &conf)
                              resCF.at<float>(pi.y+1, pi.x));
     }
 #endif
-    int center = (m_cfs[idx].norm_delta_size-1)/2;
-    m_cfs[idx].pos[0] += (pf.x-center)/m_cfs[idx].scale;
-    m_cfs[idx].pos[1] += (pf.y-center)/m_cfs[idx].scale;
+    //int center = (m_cfs[idx].norm_delta_size-1)/2;
+    pf.x -= resCF.cols/2;
+    pf.y -= resCF.rows/2;
+    m_cfs[idx].pos[0] += (pf.x)/m_cfs[idx].scale;
+    m_cfs[idx].pos[1] += (pf.y)/m_cfs[idx].scale;
     conf = (float)pv;
     return 0;
 }
 
-cv::Mat StapleTracker::detectTransCF(int idx,
-                                     cv::Mat &roiImg)
+cv::Mat KCFExpTracker::detectTransCF(int idx,
+                                  cv::Mat &roiImg)
 {
     cv::Mat feaCF;
     getTransFeaCF(roiImg, feaCF);
     applyHann2D(feaCF, m_cfs[idx].hann);
     
-    std::vector<cv::Mat> feaSplit;
-    cv::split(feaCF, feaSplit);
-    int ch = feaSplit.size();
-    int stepCh = ch*2;
-    cv::Mat resF = cv::Mat::zeros(feaCF.rows, feaCF.cols,
-                                  CV_32FC2);
-    for (int c=0; c<ch; c++)
-    {
-        cv::Mat feaFFT = FFTTools::fftd(feaSplit[c]);
-        float *pFea = (float *)(feaFFT.data);
-        float *pA = (float *)(m_cfs[idx].alpha.data)+c*2;
-        float *pRes = (float *)(resF.data);
-        for (int h=0; h<feaCF.rows; h++)
-        {
-            for (int w=0; w<feaCF.cols; w++)
-            {
-                pRes[0] += pA[0]*pFea[0]+pA[1]*pFea[1];
-                pRes[1] += pA[0]*pFea[1]-pA[1]*pFea[0];
-                pRes += 2;
-                pFea += 2;
-                pA += stepCh;
-            }
-        }
-    }
-    return FFTTools::real(FFTTools::fftd(resF, true));
+    using namespace FFTTools;
+    cv::Mat kf = linearCorrelation(feaCF, m_cfs[idx].fea);
+    return (real(fftd(complexMultiplication(m_cfs[idx].alpha, kf), true)));
 }
 
-cv::Mat StapleTracker::detectTransPWP(int idx,
-                                      cv::Mat &roiImg)
+cv::Mat KCFExpTracker::detectTransPWP(int idx,
+                                   cv::Mat &roiImg)
 {
     cv::Mat res = cv::Mat::zeros(roiImg.rows,roiImg.cols,
                                  CV_32F);
@@ -399,7 +343,7 @@ cv::Mat StapleTracker::detectTransPWP(int idx,
     return res;
 }
 
-cv::Mat StapleTracker::getSubWinPWP(int idx)
+cv::Mat KCFExpTracker::getSubWinPWP(int idx)
 {
     //Get the search region of PWP
     int norm_pwp_bg_w = round(m_cfs[idx].target_size[0]*m_cfs[idx].scale)+m_cfs[idx].norm_delta_size-1;
@@ -426,7 +370,7 @@ cv::Mat StapleTracker::getSubWinPWP(int idx)
     return z;
 }
 
-cv::Mat StapleTracker::getSubWin(int idx)
+cv::Mat KCFExpTracker::getSubWin(int idx)
 {
     cv::Rect roi;
     float cx = m_cfs[idx].pos[0];
@@ -449,72 +393,131 @@ cv::Mat StapleTracker::getSubWin(int idx)
     return z;
 }
 
-int StapleTracker::getTransFeaCF(cv::Mat &roiImg,
-                                 cv::Mat &feaHog)
+int KCFExpTracker::getTransFeaCF(cv::Mat &roiImg,
+                              cv::Mat &feaHog)
 {
     //Get HOG Feature
     cv::Mat roiGray;
-    //bgr2gray(roiImg, roiGray);
-    cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
+    bgr2gray(roiImg, roiGray);
+    //cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
     feaHog = fhog(roiGray, m_trans_cell_size);
     return 0;
 }
 
-int StapleTracker::trainTransCF(int idx, cv::Mat &roiImg,
-                                float lr, bool isInit)
+cv::Mat KCFExpTracker::gaussCorrelation(cv::Mat x1, cv::Mat x2)
 {
+    using namespace FFTTools;
+    cv::Mat c = cv::Mat(cv::Size(x1.cols, x1.rows),
+                        CV_32F, cv::Scalar(0));
+    int N = x1.cols*x1.rows;
+    float x1_sum = 0;
+    float x2_sum = 0;
+
+    std::vector<cv::Mat> x1_split;
+    cv::split(x1, x1_split);
+    std::vector<cv::Mat> x2_split;
+    cv::split(x2, x2_split);
+        
+    cv::Mat x1f, x2f, caux;
+    for (int i=0; i<x1_split.size(); i++)
+    {
+        x1f = fftd(x1_split[i]);
+        x2f = fftd(x2_split[i]);
+        caux = complexConjMult(x1f, x2f); 
+        c = c + real(fftd(caux, true));
+        x1_sum+=cv::sum(complexSelfConjMult(x1f))[0];
+        x2_sum+=cv::sum(complexSelfConjMult(x2f))[0];
+    }
+    x1_sum /= N;
+    x2_sum /= N;
+    
+    cv::Mat d; 
+    cv::max(((x1_sum+x2_sum)-2.f*c)/(x1.cols*x1.rows*x1_split.size()), 0, d);
+
+    cv::Mat k;
+    cv::exp((-d/(m_trans_gauss_kernel_sigma*m_trans_gauss_kernel_sigma)), k);
+    return fftd(k);
+}
+
+cv::Mat KCFExpTracker::linearCorrelation(cv::Mat x1, cv::Mat x2)
+{
+    using namespace FFTTools;
+    cv::Mat c = cv::Mat(cv::Size(x1.cols, x1.rows),
+                        CV_32FC2, cv::Scalar(0,0));
+    
+    std::vector<cv::Mat> x1_split;
+    cv::split(x1, x1_split);
+    std::vector<cv::Mat> x2_split;
+    cv::split(x2, x2_split);
+        
+    cv::Mat caux;
+    for (int i=0; i<x1_split.size(); i++)
+    {
+        c += FFTTools::complexConjMult(fftd(x1_split[i]),
+                                       fftd(x2_split[i]));
+    }
+    c /= (x1.cols*x1.rows*x1.channels());
+    return c;
+}
+
+int KCFExpTracker::trainTransCF(int idx, cv::Mat &roiImg,
+                             float lr, bool isInit)
+{
+    // Extract the translation feature
+    using namespace FFTTools;
     cv::Mat feaCF;
     getTransFeaCF(roiImg, feaCF);
     if (isInit)
     {
         m_cfs[idx].hann = createHann2D(feaCF.rows,
                                        feaCF.cols);
-        m_cfs[idx].y=createGaussianPeak(idx, feaCF.rows,
-                                        feaCF.cols,
-                                        m_trans_y_sigma);
+        m_cfs[idx].y=createGaussPeak(idx, feaCF.rows,
+                                     feaCF.cols,
+                                     m_trans_y_sigma);
     }
-    
-    cv::Mat num, den;
     applyHann2D(feaCF, m_cfs[idx].hann);
-    solveTransCF(num, den, feaCF, m_cfs[idx].y);
-    
+
+    // Solving the classifier
+#if 1
+    cv::Mat kf = real(linearCorrelation(feaCF, feaCF));
+    cv::Mat alpha = complexDivReal(m_cfs[idx].y,
+                                   kf+m_trans_lambda);
     if (isInit)
     {
-        m_cfs[idx].num = num.clone();
-        m_cfs[idx].den = den.clone();
-        m_cfs[idx].alpha = num.clone();
+        m_cfs[idx].fea = feaCF.clone();
+        m_cfs[idx].alpha = alpha.clone();
     }
     else
     {
+        m_cfs[idx].fea = (1-lr)*m_cfs[idx].fea + lr*feaCF;
+        m_cfs[idx].alpha = (1-lr)*m_cfs[idx].alpha + lr*alpha;
+    }
+#else
+    cv::Mat kf = linearCorrelation(feaCF, feaCF);
+    cv::Mat num = complexMultiplication(kf, m_cfs[idx].y);
+    cv::Mat den = complexMultiplication(kf,
+                                        kf+m_trans_lambda);
+    if (isInit)
+    {
+        m_cfs[idx].fea = feaCF.clone();
+        m_cfs[idx].num = num.clone();
+        m_cfs[idx].den = den.clone();
+    }
+    else
+    {
+        m_cfs[idx].fea = (1-lr)*m_cfs[idx].fea + lr*feaCF;
         m_cfs[idx].num = (1-lr)*m_cfs[idx].num + lr*num;
         m_cfs[idx].den = (1-lr)*m_cfs[idx].den + lr*den;
     }
-
-    //Compute the alpha
-    float *pA = (float *)(m_cfs[idx].alpha.data);
-    float *pNum = (float *)(m_cfs[idx].num.data);
-    float *pDen = (float *)(m_cfs[idx].den.data);
-    int channels =  feaCF.channels();
-    for (int h=0; h<feaCF.rows; h++)
-    {
-        for (int w=0; w<feaCF.cols; w++)
-        {
-            float factor = 1.0f/(*(pDen++)+m_trans_lambda);
-            for (int c=0; c<channels; c++)
-            {
-                pA[0]=pNum[0]*factor;
-                pA[1]=pNum[1]*factor;
-                pA += 2;
-                pNum += 2;
-            }
-        }
-    }
+    m_cfs[idx].alpha=complexDivision(m_cfs[idx].num,
+                                     m_cfs[idx].den);
+#endif
     return 0;
 }
 
-int StapleTracker::trainTransPWP(int idx,
-                                 cv::Mat &roiImg,
-                                 float lr, bool isInit)
+int KCFExpTracker::trainTransPWP(int idx,
+                              cv::Mat &roiImg,
+                              float lr, bool isInit)
 {
     cv::Mat histBg = cv::Mat::zeros(1, m_trans_color_bins*m_trans_color_bins*m_trans_color_bins, CV_32F);
     cv::Mat histFg = cv::Mat::zeros(1, m_trans_color_bins*m_trans_color_bins*m_trans_color_bins, CV_32F);
@@ -551,7 +554,6 @@ int StapleTracker::trainTransPWP(int idx,
             pFG[idx] += *(pFGMask++);
         }
         pImg += roiImg.step[0];
-        
     }
     histBg = histBg/(cv::sum(histBg)[0]);
     histFg = histFg/(cv::sum(histFg)[0]);
@@ -568,20 +570,21 @@ int StapleTracker::trainTransPWP(int idx,
     return 0;
 }
 
-int StapleTracker::solveTransCF(cv::Mat &num, cv::Mat &den,
-                                cv::Mat &fea, cv::Mat y)
+int KCFExpTracker::solveTransCF(cv::Mat &num,
+                             cv::Mat &den,
+                             cv::Mat &fea, cv::Mat y)
 {
     float norm = 1.0f/(fea.cols*fea.rows);
     std::vector<cv::Mat> feaSplit;
     cv::split(fea, feaSplit);
-
+    
     std::vector<cv::Mat> numV;
     den = cv::Mat::zeros(fea.rows, fea.cols, CV_32F);
     for (int i=0; i<feaSplit.size(); i++)
     {
         cv::Mat feaFFT = FFTTools::fftd(feaSplit[i]);
-        numV.push_back(FFTTools::complexConjMult(feaFFT,
-                                                 y));
+        numV.push_back(FFTTools::complexConjMult(y,
+                                                 feaFFT));
         den=den + FFTTools::complexSelfConjMult(feaFFT)*norm;
     }
     cv::merge(numV, num);
@@ -590,7 +593,8 @@ int StapleTracker::solveTransCF(cv::Mat &num, cv::Mat &den,
     num = num*norm;
     return 0;
 }
-int StapleTracker::applyHann2D(cv::Mat& fea, cv::Mat& hann)
+
+int KCFExpTracker::applyHann2D(cv::Mat& fea, cv::Mat& hann)
 {
     int channels = fea.channels();
     int width = fea.cols;
@@ -610,8 +614,8 @@ int StapleTracker::applyHann2D(cv::Mat& fea, cv::Mat& hann)
     return 0;
 }
 
-cv::Mat StapleTracker::createHann2D(int height,
-                                    int width)
+cv::Mat KCFExpTracker::createHann2D(int height,
+                                 int width)
 {   
     cv::Mat hann1t = cv::Mat(cv::Size(width,1), CV_32F, cv::Scalar(0));
     cv::Mat hann2t = cv::Mat(cv::Size(1,height), CV_32F, cv::Scalar(0)); 
@@ -624,12 +628,12 @@ cv::Mat StapleTracker::createHann2D(int height,
     return hann2t*hann1t;
 }
 
-cv::Mat StapleTracker::createGaussianPeak(int idx, int sizey, int sizex, float sigma)
+cv::Mat KCFExpTracker::createGaussPeak(int idx, int sizey, int sizex, float sigma)
 {
     cv::Mat_<float> res(sizey, sizex);
     
-    int syh = (sizey) / 2;
-    int sxh = (sizex) / 2;
+    int syh = sizey/2;
+    int sxh = sizex/2;
 
     int tw = round(m_cfs[idx].target_size[0]*m_cfs[idx].scale);
     int th = round(m_cfs[idx].target_size[1]*m_cfs[idx].scale);
@@ -645,46 +649,31 @@ cv::Mat StapleTracker::createGaussianPeak(int idx, int sizey, int sizex, float s
         }
 
     // circshift the data
-    cv::Mat resCS = res.clone();
-    for (int h=0; h<sizey; h++)
-    {
-        int idy = (h+syh)%sizey;
-        for (int w=0; w<sizex; w++)  
-        {    
-            int idx = (w+sxh)%(sizex);
-            resCS.at<float>(idy,idx) = res.at<float>(h,w);
-        }
-    }    
-    cv::Mat resF = FFTTools::fftd(resCS);
-    return resF;
+    //    cv::Mat resCS = res.clone();
+    // for (int h=0; h<sizey; h++)
+    // {
+    //     int idy = (h+syh)%sizey;
+    //     for (int w=0; w<sizex; w++)  
+    //     {    
+    //         int idx = (w+sxh)%(sizex);
+    //         //resCS.at<float>(idy,idx) = res.at<float>(h,w);
+    //         resCS.at<float>(h,w) = res.at<float>(idy,idx);
+    //     }
+    // }
+    return FFTTools::fftd(res);
 }
 
-cv::Mat StapleTracker::cropTransResponseCF(int idx,
-                                           cv::Mat &res)
+cv::Mat KCFExpTracker::cropTransResponseCF(int idx,
+                                        cv::Mat &res)
 {
-    int size = 2*floor(((m_cfs[idx].norm_delta_size/m_trans_cell_size)-1)/2) + 1;
-    int sizeH = int(size/2);
-    cv::Mat newRes = cv::Mat(cv::Size(size, size),
-                             CV_32F);
-    float *pDst = (float *)(newRes.data);
-    for (int h=0; h<newRes.rows; h++)
-    {
-        int idy = (res.rows+h-sizeH-1)%res.rows;
-        for (int w=0; w<newRes.cols; w++)
-        {
-            int idx = (res.cols+w-sizeH-1)%res.cols;
-            *(pDst++) = res.at<float>(idy, idx);
-        }
-    }
-
-    if (m_trans_cell_size > 1)
-        cv::resize(newRes, newRes, cv::Size(m_cfs[idx].norm_delta_size,m_cfs[idx].norm_delta_size));
-        //resize1C(newRes, newRes, cv::Size(m_cfs[idx].norm_delta_size,m_cfs[idx].norm_delta_size));
-    return newRes;
+    cv::resize(res, res,
+               cv::Size(m_cfs[idx].norm_delta_size,
+                        m_cfs[idx].norm_delta_size));
+    return res;
 }
 
-cv::Mat StapleTracker::cropTransResponsePWP(int idx,
-                                            cv::Mat &res)
+cv::Mat KCFExpTracker::cropTransResponsePWP(int idx,
+                                         cv::Mat &res)
 {
 
     cv::Mat II = cv::Mat(cv::Size(res.cols+1,
@@ -716,7 +705,7 @@ cv::Mat StapleTracker::cropTransResponsePWP(int idx,
     return newRes;
 }
 
-int StapleTracker::detectScaleCF(int idx, float &conf)
+int KCFExpTracker::detectScaleCF(int idx, float &conf)
 {
     cv::Mat fea = getScaleFeaCF(idx);
     fea = FFTTools::fftd1d(fea, 1);
@@ -784,41 +773,18 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
     return 0;
 }
 
-int StapleTracker::getOneScaleFeaCF(cv::Mat &roiImg,
-                                    cv::Mat &feaHog)
+int KCFExpTracker::getOneScaleFeaCF(cv::Mat &roiImg,
+                                 cv::Mat &feaHog)
 {
     //Get HOG Feature
     cv::Mat roiGray;
     cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
-    //bgr2gray(roiImg, roiGray);
-    // FILE *fid1 = fopen("./rgb.txt", "w");
-    // FILE *fid2 = fopen("./gray.txt", "w");
-    // uint8_t *data=(uint8_t *)(roiImg.data);
-    // for (int h=0; h<roiImg.rows; h++)
-    // {
-    //     for (int w=0; w<roiImg.cols; w++)
-    //         fprintf(fid1, "%d, %d, %d, ", data[w*3+2],
-    //                 data[w*3+1], data[w*3]);
-    //     data += roiImg.cols*3;
-    //     fprintf(fid1, "\n");
-    // }
-    // fclose(fid1);
 
-    // data=(uint8_t *)(roiGray.data);
-    // for (int h=0; h<roiImg.rows; h++)
-    // {
-    //     for (int w=0; w<roiImg.cols; w++)
-    //         fprintf(fid2, "%d, ", data[w]);
-    //     data += roiImg.cols;
-    //     fprintf(fid2, "\n");
-    // }
-    // fclose(fid2);
-    
     feaHog = fhog(roiGray, m_scale_cell_size);
     return 0;
 }
 
-cv::Mat StapleTracker::getScaleFeaCF(int idx)
+cv::Mat KCFExpTracker::getScaleFeaCF(int idx)
 {
     int tw = m_cfs[idx].target_size[0];
     int th = m_cfs[idx].target_size[1];
@@ -854,7 +820,7 @@ cv::Mat StapleTracker::getScaleFeaCF(int idx)
     return feas;
 }
 
-int StapleTracker::trainScaleCF(int idx, float lr, bool isInit)
+int KCFExpTracker::trainScaleCF(int idx, float lr, bool isInit)
 {
     cv::Mat fea = getScaleFeaCF(idx);
     fea = FFTTools::fftd1d(fea, 1);

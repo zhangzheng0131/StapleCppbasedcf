@@ -129,13 +129,14 @@ cv::Mat complexMultiplication(cv::Mat a, cv::Mat b)
 
 cv::Mat complexConjMult(cv::Mat a, cv::Mat b)
 {
+    // b is conj
     std::vector<cv::Mat> pa;
     std::vector<cv::Mat> pb;
     cv::split(a, pa);
     cv::split(b, pb);
     std::vector<cv::Mat> pres;
     pres.push_back(pa[0].mul(pb[0]) + pa[1].mul(pb[1]));
-    pres.push_back(pa[0].mul(pb[1]) - pa[1].mul(pb[0]));
+    pres.push_back(-pa[0].mul(pb[1]) + pa[1].mul(pb[0]));
     cv::Mat res;
     cv::merge(pres, res);
     return res;
@@ -165,6 +166,24 @@ cv::Mat complexDivision(cv::Mat a, cv::Mat b)
 
     cv::Mat res;
     cv::merge(pres, res);
+    return res;
+}
+
+cv::Mat complexDivReal(cv::Mat cMat, cv::Mat rMat)
+{
+    cv::Mat res = cMat.clone();
+    float *pRes = (float *)(res.data);
+    float *pR = (float *)(rMat.data);
+    for (int h=0; h<cMat.rows; h++)
+    {
+        for (int w=0; w<rMat.cols; w++)
+        {
+            pRes[0]= pRes[0]/pR[0];
+            pRes[1]= pRes[1]/pR[0]; 
+            pRes += 2;
+            pR += 1;
+        }
+    }
     return res;
 }
 

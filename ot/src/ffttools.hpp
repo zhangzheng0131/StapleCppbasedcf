@@ -19,6 +19,7 @@ namespace FFTTools
     cv::Mat complexConjMult(cv::Mat a, cv::Mat b);
     cv::Mat complexSelfConjMult(cv::Mat a);
     cv::Mat complexDivision(cv::Mat a, cv::Mat b);
+    cv::Mat complexDivReal(cv::Mat cMat, cv::Mat rMat);
     void rearrange(cv::Mat &img);
     void normalizedLogTransform(cv::Mat &img);
 }
