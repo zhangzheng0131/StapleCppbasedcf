@@ -70,6 +70,7 @@ static int resize1C(cv::Mat &ori, cv::Mat &dst, cv::Size sz)
 }
 */
 
+// According 3 points to get the peak of parabola
 static float subPixelPeak(float left, float center, float right)
 {   
     float divisor = 2*center - right - left;
