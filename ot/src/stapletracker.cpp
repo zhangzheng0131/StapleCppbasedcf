@@ -330,6 +330,16 @@ int StapleTracker::detectTrans(int idx, float &conf)
     int center = (m_cfs[idx].norm_delta_size-1)/2;
     m_cfs[idx].pos[0] += (pf.x-center)/m_cfs[idx].scale;
     m_cfs[idx].pos[1] += (pf.y-center)/m_cfs[idx].scale;
+
+    // Make sure the bndbox is not gone outside 3/4
+    int tw2 = m_cfs[idx].target_size[0]/4;
+    int th2 = m_cfs[idx].target_size[1]/4;
+    m_cfs[idx].pos[0] = MIN_T(MAX_T(m_cfs[idx].pos[0],
+                                    1-tw2),
+                              m_img.width+tw2-1);
+    m_cfs[idx].pos[1] = MIN_T(MAX_T(m_cfs[idx].pos[1],
+                                    1-th2),
+                              m_img.height+th2-1);
     conf = (float)pv;
     return 0;
 }
