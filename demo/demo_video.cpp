@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
                               cv::Point(roi.x, roi.y),
                               cv::Point(roi.x+roi.w,
                                         roi.y+roi.h),
-                              cv::Scalar(0, 255, 255),1,8);
+                              cv::Scalar(0, 0 , 255),2,8);
             }
         }
             
@@ -195,7 +195,7 @@ int main(int argc, char* argv[]){
                     cv::FONT_HERSHEY_SIMPLEX, 1,
                     cv::Scalar(255,0,0), 2, 8);
 
-        if (isSave)
+        if (isSave and !paused)
             outputV << show;
         //End Tracking
         if (isSelecting || isNewObj)            

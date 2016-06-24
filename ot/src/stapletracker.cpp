@@ -7,6 +7,7 @@
 #include "labdata.hpp"
 #include "comdef.h"
 #include "integral.hpp"
+#include "labdata.hpp"
 
 /*  Test API for Matlab
 static int bgr2gray(cv::Mat& ori, cv::Mat& dst)
@@ -230,7 +231,8 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
 int StapleTracker::update()
 {
     m_curObjNum = 0;
-    float train_th=0.15f, update_th=0.1f;
+    float train_th=0.2f, update_th=0.15f;
+    //float train_th=0.f, update_th=0.f;
     float confT, confS;
     for (int i=0 ;i<m_maxObjNum; i++)
     {
@@ -462,11 +464,63 @@ cv::Mat StapleTracker::getSubWin(int idx)
 int StapleTracker::getTransFeaCF(cv::Mat &roiImg,
                                  cv::Mat &feaHog)
 {
-    //Get HOG Feature
+    // Extract HOG Feature
     cv::Mat roiGray;
-    //bgr2gray(roiImg, roiGray);
     cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
     feaHog = fhog(roiGray, m_trans_cell_size);
+
+#ifdef ENABLE_LAB_TRANS
+    // Extract LAB Feature
+    int cell_sizeQ = m_trans_cell_size*m_trans_cell_size;
+    cv::Mat imgLab;
+    cv::cvtColor(roiImg, imgLab, CV_BGR2Lab);
+    unsigned char *pLAB = (unsigned char*)(imgLab.data);
+    cv::Mat labFea = cv::Mat::zeros(cv::Size(feaHog.cols,
+                                             feaHog.rows),
+                                    CV_32FC(nLABCentroid));
+
+    float *pFea = (float *)(labFea.data);
+    for (int cY=0; cY<imgLab.rows; cY+=m_trans_cell_size)
+    {
+        for (int cX=0;cX<imgLab.cols;cX+=m_trans_cell_size)
+        {
+            for(int y=cY; y<cY+m_trans_cell_size; ++y)
+            {
+                for(int x=cX; x<cX+m_trans_cell_size; ++x)
+                {
+                    int idx = (imgLab.cols * y + x) * 3;
+                    float l = (float)pLAB[idx];
+                    float a = (float)pLAB[idx + 1];
+                    float b = (float)pLAB[idx + 2];
+                    
+                    // Iterate trough each centroid
+                    float minDist = FLT_MAX;
+                    int minIdx = 0;
+                    for(int k=0; k<nLABCentroid; ++k)
+                    {
+                        float ld=(l-pLABCentroids[3*k]);
+                        float ad=(a-pLABCentroids[3*k+1]);
+                        float bd=(b-pLABCentroids[3*k+2]);
+                                    
+                        float dist =ld*ld + ad*ad + bd*bd;
+                        if(dist < minDist){
+                            minDist = dist;
+                            minIdx = k;
+                        }
+                    }
+                    pFea[minIdx] += 1.f/cell_sizeQ;
+                }
+            }
+            pFea += nLABCentroid;
+        }
+    }
+    std::vector<cv::Mat> fv0;
+    std::vector<cv::Mat> fv1;
+    cv::split(feaHog, fv0);
+    cv::split(labFea, fv1);
+    fv0.insert(fv0.end(), fv1.begin(), fv1.end());
+    cv::merge(fv0, feaHog);
+#endif
     return 0;
 }
 
@@ -800,31 +854,60 @@ int StapleTracker::getOneScaleFeaCF(cv::Mat &roiImg,
     //Get HOG Feature
     cv::Mat roiGray;
     cv::cvtColor(roiImg, roiGray, CV_BGR2GRAY);
-    //bgr2gray(roiImg, roiGray);
-    // FILE *fid1 = fopen("./rgb.txt", "w");
-    // FILE *fid2 = fopen("./gray.txt", "w");
-    // uint8_t *data=(uint8_t *)(roiImg.data);
-    // for (int h=0; h<roiImg.rows; h++)
-    // {
-    //     for (int w=0; w<roiImg.cols; w++)
-    //         fprintf(fid1, "%d, %d, %d, ", data[w*3+2],
-    //                 data[w*3+1], data[w*3]);
-    //     data += roiImg.cols*3;
-    //     fprintf(fid1, "\n");
-    // }
-    // fclose(fid1);
-
-    // data=(uint8_t *)(roiGray.data);
-    // for (int h=0; h<roiImg.rows; h++)
-    // {
-    //     for (int w=0; w<roiImg.cols; w++)
-    //         fprintf(fid2, "%d, ", data[w]);
-    //     data += roiImg.cols;
-    //     fprintf(fid2, "\n");
-    // }
-    // fclose(fid2);
-    
     feaHog = fhog(roiGray, m_scale_cell_size);
+
+#ifdef ENABLE_LAB_SCALE
+    // Extract LAB Feature
+    int cell_sizeQ = m_scale_cell_size*m_scale_cell_size;
+    cv::Mat imgLab;
+    cv::cvtColor(roiImg, imgLab, CV_BGR2Lab);
+    unsigned char *pLAB = (unsigned char*)(imgLab.data);
+    cv::Mat feaLab = cv::Mat::zeros(cv::Size(feaHog.cols,
+                                             feaHog.rows),
+                                    CV_32FC(nLABCentroid));
+
+    float *pFea = (float *)(feaLab.data);
+    for (int cY=0; cY<imgLab.rows-m_scale_cell_size; cY+=m_scale_cell_size)
+    {
+        for (int cX=0;cX<imgLab.cols-m_scale_cell_size;cX+=m_scale_cell_size)
+        {
+            for(int y=cY; y<cY+m_scale_cell_size; ++y)
+            {
+                for(int x=cX; x<cX+m_scale_cell_size; ++x)
+                {
+                    int idx = (imgLab.cols * y + x) * 3;
+                    float l = (float)pLAB[idx];
+                    float a = (float)pLAB[idx + 1];
+                    float b = (float)pLAB[idx + 2];
+                    
+                    // Iterate trough each centroid
+                    float minDist = FLT_MAX;
+                    int minIdx = 0;
+                    for(int k=0; k<nLABCentroid; ++k)
+                    {
+                        float ld=(l-pLABCentroids[3*k]);
+                        float ad=(a-pLABCentroids[3*k+1]);
+                        float bd=(b-pLABCentroids[3*k+2]);
+                                    
+                        float dist =ld*ld + ad*ad + bd*bd;
+                        if(dist < minDist){
+                            minDist = dist;
+                            minIdx = k;
+                        }
+                    }
+                    pFea[minIdx] += 1.f/cell_sizeQ;
+                }
+            }
+            pFea += nLABCentroid;
+        }
+    }
+    std::vector<cv::Mat> fv0;
+    std::vector<cv::Mat> fv1;
+    cv::split(feaHog, fv0);
+    cv::split(feaLab, fv1);
+    fv0.insert(fv0.end(), fv1.begin(), fv1.end());
+    cv::merge(fv0, feaHog);
+#endif
     return 0;
 }
 

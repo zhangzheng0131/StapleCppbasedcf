@@ -5,6 +5,8 @@
 #include "tracker.hpp"
 
 #define ENABLE_SUB_PEAK
+//#define ENABLE_LAB_TRANS
+//#define ENABLE_LAB_SCALE
 typedef struct tagStapleMats
 {
     //TransCF
