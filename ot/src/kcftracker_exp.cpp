@@ -528,7 +528,7 @@ int KCFExpTracker::trainTransPWP(int idx,
     int offsetX = (m_cfs[idx].bg_size[0]-m_cfs[idx].target_size[0])*m_cfs[idx].scale/2;
     int offsetY = (m_cfs[idx].bg_size[1]-m_cfs[idx].target_size[1])*m_cfs[idx].scale/2;
     bgMask(cv::Rect(offsetX, offsetY,
-                    bg_w-2*offsetX, bg_h-2*offsetY))=0;
+                    bg_w-2*offsetX, bg_h-2*offsetY))=cv::Scalar::all(0.0);
     
     cv::Mat fgMask=cv::Mat::zeros(bg_h, bg_w, CV_8U);
     offsetX = (m_cfs[idx].bg_size[0]-m_cfs[idx].fg_size[0])*m_cfs[idx].scale/2;
