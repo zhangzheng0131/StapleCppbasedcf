@@ -12,7 +12,7 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
 else()
     ### Set the INCLUDE_DIR for parent scope
     set(TRACK_INCLUDE_DIR 
-        ${CMAKE_CURRENT_SOURCE_DIR}/tracker/inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ot/inc
         PARENT_SCOPE)   
 endif() 
 
