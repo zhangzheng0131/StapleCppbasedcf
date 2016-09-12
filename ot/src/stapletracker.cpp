@@ -225,6 +225,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
     trainTransCF(idx, roiImg, 1.f, true);
     trainTransPWP(idx, roiImg, 1.f, true);
     trainScaleCF(idx, 1.f, true);
+    m_curObjNum ++;
     return 0;
 }
 

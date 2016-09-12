@@ -104,6 +104,7 @@ int KCFTracker::add(Rect_T &roi, int cate_id)
                               m_kcfs[idx].feaDims[1],
                               CV_32FC2, float(0));
     train(m_kcfs[idx].fea, idx, 1.0);
+    m_curObjNum ++;
     return 0;
  }
 
