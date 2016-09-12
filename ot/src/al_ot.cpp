@@ -48,6 +48,18 @@ OT_EXPORTS int  ot_update(OTHandle handle)
     return pH->update();
 }
 
+OT_EXPORTS int  ot_count(OTHandle handle)
+{
+    Tracker *pH = (Tracker *)(handle);
+    return pH->count();
+}
+
+OT_EXPORTS int  ot_totalCount(OTHandle handle)
+{
+    Tracker *pH = (Tracker *)(handle);
+    return pH->accumCount();
+}
+
 OT_EXPORTS int  ot_object(OTHandle handle,
                           unsigned int idx,
                           Rect_T *pRect,

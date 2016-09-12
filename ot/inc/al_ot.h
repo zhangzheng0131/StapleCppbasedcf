@@ -44,7 +44,10 @@ extern "C" {
                                  int cate_id);
     
     OT_EXPORTS int  ot_update(OTHandle handle);
+
+    OT_EXPORTS int  ot_count(OTHandle handle);
     
+    OT_EXPORTS int  ot_totalCount(OTHandle handle);
     
     OT_EXPORTS int  ot_object(OTHandle handle,
                               unsigned int idx,
