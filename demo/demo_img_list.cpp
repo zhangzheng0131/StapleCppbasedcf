@@ -98,18 +98,27 @@ int main(int argc, char* argv[]){
     std::string line, name;
     cv::Mat frame;
     double beg, end, total_time=0;
+	int totalFrame = 0;
     bool isUpdate = false;
     cv::namedWindow("Tracker", 0 );
-    while(!fileList.eof())
+
+
+	//open a file to save results
+	std::ofstream myfile;
+	myfile.open("tracking_results.txt");
+
+
+	while(!fileList.eof())
     {
         std::getline(fileList, line);
         std::vector<std::string> eles = split(line);
+		
         if (eles.size()<1)
             break;
         frame = cv::imread(eles[0].c_str());
         if (frame.empty())
             break;
-
+		totalFrame += 1;
         // Open saved video
         if (isSave && (!outputV.isOpened()))
         {
@@ -140,10 +149,10 @@ int main(int argc, char* argv[]){
         img.data[0] = (unsigned char *)frame.data;
         ot_setImage(handle, &img);
 
-        
+		Rect_T roi{0,0,0,0};
         if (isUpdate==false && eles.size()>1)
         {
-            Rect_T roi;
+            
             if (5==eles.size())
             {
                 roi.x = int(atof(eles[1].c_str()));
@@ -155,6 +164,7 @@ int main(int argc, char* argv[]){
                 roi = getRectFromRotatedBB(eles);
             ot_addObject(handle, &roi, 0);
             isUpdate = true;
+			myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
             continue;
         }
 
@@ -163,22 +173,26 @@ int main(int argc, char* argv[]){
             int count = ot_update(handle);
             for (int i=0; i<count; i++)
             {
-                Rect_T roi;
+                
                 ot_object(handle, i, &roi, 0, 0, 0);
                 cv::rectangle(frame,
                               cv::Point(roi.x, roi.y),
                               cv::Point(roi.x+roi.w,
                                         roi.y+roi.h),
                               cv::Scalar(0,255,255),2,8);
+				
             }
         }
+
+		myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
 
         if (isSave)
             outputV << frame;
         // Show the FPS
         end = timeStamp();   
         char str[50]={0};
-        sprintf(str,"Time: %0.2f ms", (end-beg)/1000);
+		double useTime = (end - beg) / 1000;
+        sprintf(str,"Time: %0.2f ms", useTime);
         cv::putText(frame, str, cv::Point(20,30), 
                     cv::FONT_HERSHEY_SIMPLEX, 1,
                     cv::Scalar(255,0,0), 2, 8);
@@ -187,7 +201,10 @@ int main(int argc, char* argv[]){
         char c = (char)cv::waitKey(10);
         if(27==c || 'q'==c)
             break;
+		total_time += useTime;
     }
+	myfile.close();
     ot_destroy(&handle);
+	printf("total time is %0.2f ms and FPS is : %f \n", total_time, totalFrame / total_time *1000);
     return 0;
 }

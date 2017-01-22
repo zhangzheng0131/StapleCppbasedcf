@@ -4,7 +4,7 @@ by ihpdep
 *******************************************************************************/
 #ifndef _SSE_HPP_
 #define _SSE_HPP_
-//#define __USE_SPEEDUP
+#define __USE_SPEEDUP
 
 
 #ifdef __USE_SPEEDUP
@@ -79,6 +79,7 @@ struct vec4
 	
 	vec4() { for (int i = 0; i < 4;++i)	_p.datai[i] = 0; }
 	vec4(float x){_p.data[0] = x; _p.data[1] = x; _p.data[2] = x; _p.data[3] = x;}
+	vec4(unsigned x) { _p.datai[0] = x; _p.datai[1] = x; _p.datai[2] = x; _p.datai[3] = x; }
 	vec4(float x, float y, float z, float w){_p.data[0] = x; _p.data[1] = y; _p.data[2] = z; _p.data[3] = w;}
 	vec4(unsigned x, unsigned y, unsigned z, unsigned w) { _p.datai[0] = x; _p.datai[1] = y; _p.datai[2] = z; _p.datai[3] = w; }
 	

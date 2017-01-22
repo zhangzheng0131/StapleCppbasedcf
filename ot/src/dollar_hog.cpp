@@ -56,6 +56,7 @@ void grad1( float *I, float *Gx, float *Gy, int h, int w, int x ) {
   Ip=I-h; In=I+h; r=.5f;
   if(x==0) { r=1; Ip+=h; } else if(x==w-1) { r=1; In-=h; }
   if( h<4 || h%4>0 || (size_t(I)&15) || (size_t(Gx)&15) ) {
+	  volatile int y;
     for( y=0; y<h; y++ ) *Gx++=(*In++-*Ip++)*r;
   } else {
     _G=(M128*) Gx; _Ip=(M128*) Ip; _In=(M128*) In; _r = SET(r);
@@ -126,17 +127,17 @@ void gradMag( float *I, float *M, float *O, int h, int w, int d, bool full ) {
     memcpy( M+x*h, M2, h*sizeof(float) );
     // compute and store gradient orientation (O) via table lookup
     if( O!=0 ) for( y=0; y<h; y++ ) O[x*h+y] = acost[(int)Gx[y]];
-    if( O!=0 && full ) {
+//#ifdef __USE_SPEEDUP 
+//TODO: the normal instruction will crash here in release mode 
+//before JK's memory fixed. The additional 1 memory must be accessed here
+	if( O!=0 && full ) {
       y1=((~size_t(O+x*h)+1)&15)/4; y=0;
       for( ; y<y1; y++ ) O[y+x*h]+=(Gy[y]<0)*PI;
-	  for (; y < h - 4; y += 4) {
-		  vec4 tmp1 = CMPLT(LDu(Gy[y]), SET(0.f)); // x < 0 ? ff:0
-		  vec4 tmp2 = AND(tmp1, SET(PI));// 0 or PI
-		  vec4 tmp3 = ADD(LDu(O[y + x*h]), tmp2);
-		  STRu(O[y + x*h],  tmp3);
-	  }
-//       for( ; y<h; y++ ) O[y+x*h]+=(Gy[y]<0)*PI;
+      for( ; y<h-4; y+=4 ) STRu( O[y+x*h],
+        ADD( LDu(O[y+x*h]), AND(CMPLT(LDu(Gy[y]),SET(0.f)),SET(PI)) ) );
+      for( ; y<h; y++ ) O[y+x*h]+=(Gy[y]<0)*PI;
     }
+//#endif
   }
   alFree(Gx); alFree(Gy); alFree(M2);
 }
@@ -343,7 +344,9 @@ void fhog( float *M, float *O, float *H, int h, int w, int binSize,
   const int hb=h/binSize, wb=w/binSize, nb=hb*wb, nbo=nb*nOrients;
   float *N, *R1, *R2; int o, x;
   // compute unnormalized constrast sensitive histograms
-  R1 = (float*) wrCalloc(wb*hb*nOrients*2,sizeof(float));
+  // fix memory bug according to JK's revised hog.cpp
+  R1 = (float*)wrCalloc(wb*hb*nOrients * 2 + 1, sizeof(float));
+  R1[wb*hb*nOrients * 2] = 0.f;
   gradHist( M, O, R1, h, w, binSize, nOrients*2, softBin, true );
   // compute unnormalized contrast insensitive histograms
   R2 = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
