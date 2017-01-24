@@ -8,11 +8,14 @@ by ihpdep
 
 
 #ifdef __USE_SPEEDUP
+#ifdef __ARM_NEON
+#include "SSE2NEON.h"
+#else
+#include <emmintrin.h> // SSE2:<e*.h>, SSE3:<p*.h>, SSE4:<s*.h>
+#endif
+
 #define M128 __m128
 #define M128i __m128i
-
-#include <emmintrin.h> // SSE2:<e*.h>, SSE3:<p*.h>, SSE4:<s*.h>
-
 
 #define RETf inline M128
 #define RETi inline M128i
@@ -122,8 +125,7 @@ template<typename T> inline
 T _mymin(T a, T b) { return T(_FV4( min )); }
 
 
-// #undef _SV4
-// #undef __VEC
+
 
 #define M128 vec4
 #define M128i vec4i
@@ -183,6 +185,12 @@ RETi CVT(const M128 a) { return vec4i((int)__VEC(a, 0), (int)__VEC(a, 1), (int)_
 #undef RETf
 #undef RETi
 
+#undef __VEC
+#undef __VECi
+#undef _FV4
+#undef _CV4
+#undef _CV4i
+#undef _SV4i
 
 #endif
 

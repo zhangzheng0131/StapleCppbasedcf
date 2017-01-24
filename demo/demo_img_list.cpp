@@ -65,7 +65,7 @@ Rect_T getRectFromRotatedBB(std::vector<std::string> &eles)
 
 int main(int argc, char* argv[]){
     // Parse the options
-	bool isVisual = true;
+	bool isVisual = false;
     char opts[] = "hsmb:";
     char oc;
     int method = 0;
