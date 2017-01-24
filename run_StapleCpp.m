@@ -10,7 +10,7 @@ h=seq.init_rect(4);
 %prepare img list
 
 command = ['python matlabImgLst.py -d ' seq.path ' -r "' num2str(x) ' ' num2str(y) ' ' num2str(w) ' ' num2str(h) ...
-   '" -f imglst.lst' ];
+   '" -f imglst.lst' ' -s ' num2str(seq.startFrame) ' -e ' num2str(seq.endFrame) ' -n ' num2str(seq.nz) ' -x ' seq.ext];
 dos(command);
 
 tic
@@ -24,4 +24,4 @@ results.res(:,1:2) =results.res(:,1:2) + 1;%c to matlab
 results.type='rect';
 results.fps=seq.len/duration;
 
-%results.fps = dlmread([seq.name '_ST_FPS.txt']);
+results.fps = dlmread(['fps.txt']);
