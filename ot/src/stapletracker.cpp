@@ -232,7 +232,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id)
 int StapleTracker::update()
 {
     m_curObjNum = 0;
-    float train_th=0.2f, update_th=0.15f;
+    float train_th=0.0f, update_th=0.0f;
     //float train_th=0.f, update_th=0.f;
     float confT, confS;
     for (int i=0 ;i<m_maxObjNum; i++)

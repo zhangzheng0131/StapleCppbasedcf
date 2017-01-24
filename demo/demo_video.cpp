@@ -195,7 +195,7 @@ int main(int argc, char* argv[]){
                     cv::FONT_HERSHEY_SIMPLEX, 1,
                     cv::Scalar(255,0,0), 2, 8);
 
-        if (isSave and !paused)
+        if (isSave && !paused)
             outputV << show;
         //End Tracking
         if (isSelecting || isNewObj)            
