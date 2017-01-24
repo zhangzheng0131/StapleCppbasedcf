@@ -72,6 +72,7 @@ RETi CVT( const M128 x ) { return _mm_cvttps_epi32(x); }
 
 #else
 
+#include <math.h>
 struct vec4
 {
 	union MyUnion
