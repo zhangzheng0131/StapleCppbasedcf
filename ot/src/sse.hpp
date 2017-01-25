@@ -4,10 +4,10 @@ by ihpdep
 *******************************************************************************/
 #ifndef _SSE_HPP_
 #define _SSE_HPP_
-#define __USE_SPEEDUP
 
 
-#ifdef __USE_SPEEDUP
+
+#ifdef __USE_SIMD
 #ifdef __ARM_NEON
 #include "SSE2NEON.h"
 #else
@@ -167,7 +167,7 @@ RETf RCP(const M128 a) { return vec4(1/ __VEC(a, 0), 1 / __VEC(a, 1), 1 / __VEC(
 RETf RCPSQRT(const M128 a) { return vec4(1 /sqrtf(__VEC(a, 0)), 1 / sqrtf(__VEC(a, 1)), 1 / sqrtf(__VEC(a, 2)), 1 / sqrtf(__VEC(a, 3))); }//_mm_rsqrt_ps(x)
 
 // logical operators
-RETf AND(const M128 a, const M128 b) { return vec4(__VECi(a, 0) & __VECi(b, 0), __VECi(a, 1) & __VECi(b, 1), __VECi(a, 2) & __VECi(b, 2), __VECi(a, 3) & __VECi(b, 3)); }//_mm_and_ps(x, y)
+RETf AND(const M128 a, const M128 b) { return vec4(_SV4i( & )); }//_mm_and_ps(x, y)
 RETi AND(const M128i a, const M128i b) { return vec4i(_SV4( & )); }//_mm_and_si128(x, y)
 RETf ANDNOT(const M128 a, const M128 b) { return vec4(~__VECi(a, 0) & __VECi(b, 0), ~__VECi(a, 1) & __VECi(b, 1), ~__VECi(a, 2) & __VECi(b, 2), ~__VECi(a, 3) & __VECi(b, 3)); }//_mm_andnot_ps(x, y)
 RETf OR(const M128 a, const M128 b) { return vec4(_SV4i( | )); }//_mm_or_ps(x, y);
