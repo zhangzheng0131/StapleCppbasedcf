@@ -1,3 +1,16 @@
+### Add option
+option(USE_SIMD "Use SSE in x86 and NEON on ARM" ON)
+option(RUN_BENCHMARK "Turn off the threshold setting in code for benchmark testing" ON)
+
+if (USE_SIMD)
+  add_definitions(-D__USE_SIMD)
+endif()
+
+if (RUN_BENCHMARK)
+  add_definitions(-D__BENCHMARK)
+endif()
+
+
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
    cmake_minimum_required(VERSION 2.8)
    project(tracker)
@@ -32,9 +45,8 @@ include_directories(ot/inc)
 add_subdirectory(ot)
 
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    add_subdirectory(demo)
+  add_subdirectory(demo)
+  add_subdirectory(benchmark)
 endif()
-
-
 
 

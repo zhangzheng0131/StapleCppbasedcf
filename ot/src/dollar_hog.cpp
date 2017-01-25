@@ -127,7 +127,7 @@ void gradMag( float *I, float *M, float *O, int h, int w, int d, bool full ) {
     memcpy( M+x*h, M2, h*sizeof(float) );
     // compute and store gradient orientation (O) via table lookup
     if( O!=0 ) for( y=0; y<h; y++ ) O[x*h+y] = acost[(int)Gx[y]];
-//#ifdef __USE_SPEEDUP 
+//#ifdef __USE_SIMD 
 //TODO: the normal instruction will crash here in release mode 
 //before JK's memory fixed. The additional 1 memory must be accessed here
 	if( O!=0 && full ) {

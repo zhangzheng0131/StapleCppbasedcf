@@ -14,14 +14,14 @@ command = ['python matlabImgLst.py -d ' seq.path ' -r "' num2str(x) ' ' num2str(
 dos(command);
 
 tic
-command = ['demo_img_list.exe imglst.lst'];
+command = ['tracker-benchmark imglst.lst'];
 dos(command);
 duration=toc;
 
-results.res = dlmread('tracking_results.txt');
+results.res = dlmread('tracking_results.tmp');
 results.res(:,1:2) =results.res(:,1:2) + 1;%c to matlab
 
 results.type='rect';
 results.fps=seq.len/duration;
 
-results.fps = dlmread(['fps.txt']);
+results.fps = dlmread(['fps.tmp']);
