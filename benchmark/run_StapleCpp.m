@@ -14,7 +14,7 @@ command = ['python matlabImgLst.py -d ' seq.path ' -r "' num2str(x) ' ' num2str(
 dos(command);
 
 tic
-command = ['tracker-benchmark.exe imglst.lst'];
+command = ['tracker-benchmark imglst.lst'];
 dos(command);
 duration=toc;
 
