@@ -1,6 +1,6 @@
 build
 .DS_Store
 ot/src/version.cpp
-*.txt
+*.tmp
 *.lst
 *.exe

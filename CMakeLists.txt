@@ -45,7 +45,8 @@ include_directories(ot/inc)
 add_subdirectory(ot)
 
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    add_subdirectory(demo)
+  add_subdirectory(demo)
+  add_subdirectory(benchmark)
 endif()
 
 

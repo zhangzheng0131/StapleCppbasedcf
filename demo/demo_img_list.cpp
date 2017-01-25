@@ -8,8 +8,6 @@
 #include "log.h"
 #include "comdef.h"
 
-
-
 int usage()
 {
     printf("Usage::");
@@ -65,8 +63,7 @@ Rect_T getRectFromRotatedBB(std::vector<std::string> &eles)
 
 int main(int argc, char* argv[]){
     // Parse the options
-	bool isVisual = false;
-    char opts[] = "hsmb:";
+    char opts[] = "hsm:";
     char oc;
     int method = 0;
     bool isSave = false;
@@ -82,9 +79,6 @@ int main(int argc, char* argv[]){
         case 's':
             isSave = true;
             break;
-		case 'b':
-			isVisual = true;
-			break;
         }
     }
     argv += getpos_t();
@@ -104,125 +98,96 @@ int main(int argc, char* argv[]){
     std::string line, name;
     cv::Mat frame;
     double beg, end, total_time=0;
-	int totalFrame = 0;
     bool isUpdate = false;
-	if (isVisual)
-	{
-		cv::namedWindow("Tracker", 0);
-	}
+    cv::namedWindow("Tracker", 0 );
+    while(!fileList.eof())
+    {
+        std::getline(fileList, line);
+        std::vector<std::string> eles = split(line);
+        if (eles.size()<1)
+            break;
+        frame = cv::imread(eles[0].c_str());
+        if (frame.empty())
+            break;
 
-	//open a file to save results
-	std::ofstream myfile;
-	myfile.open("tracking_results.txt");
+        // Open saved video
+        if (isSave && (!outputV.isOpened()))
+        {
+            char path[1024] = {0};
+            sprintf(path,"%s_res.avi", argv[0]);
+            outputV.open(path,
+                         CV_FOURCC('M','J','P','G'),
+                         25,
+                         cv::Size(frame.cols, frame.rows),
+                         true);
+            if (!outputV.isOpened())
+            {
+                printf("Write video open failed\n");
+                return -1;
+            }
+        }
 
+        //char path[1024]={0};
+        //sprintf(path, "%s.BMP", eles[0].c_str());
+        //imwrite(path, frame);
+        //continue;
+        beg = timeStamp();   
+        img.format = IMG_FMT_BGRBGR;
+        img.pitch[0] = frame.cols*3;
+        img.width = frame.cols;
+        img.height = frame.rows;
+        img.nPlane = 1;
+        img.data[0] = (unsigned char *)frame.data;
+        ot_setImage(handle, &img);
 
-	while (!fileList.eof())
-	{
-		std::getline(fileList, line);
-		std::vector<std::string> eles = split(line);
+        
+        if (isUpdate==false && eles.size()>1)
+        {
+            Rect_T roi;
+            if (5==eles.size())
+            {
+                roi.x = int(atof(eles[1].c_str()));
+                roi.y = int(atof(eles[2].c_str()));
+                roi.w = int(atof(eles[3].c_str()));
+                roi.h = int(atof(eles[4].c_str()));
+            }
+            else
+                roi = getRectFromRotatedBB(eles);
+            ot_addObject(handle, &roi, 0);
+            isUpdate = true;
+            continue;
+        }
 
-		if (eles.size() < 1)
-			break;
-		frame = cv::imread(eles[0].c_str());
-		if (frame.empty())
-			break;
-		totalFrame += 1;
-		// Open saved video
-		if (isSave && (!outputV.isOpened()))
-		{
-			char path[1024] = { 0 };
-			sprintf(path, "%s_res.avi", argv[0]);
-			outputV.open(path,
-				CV_FOURCC('M', 'J', 'P', 'G'),
-				25,
-				cv::Size(frame.cols, frame.rows),
-				true);
-			if (!outputV.isOpened())
-			{
-				printf("Write video open failed\n");
-				return -1;
-			}
-		}
+        if (isUpdate)
+        {
+            int count = ot_update(handle);
+            for (int i=0; i<count; i++)
+            {
+                Rect_T roi;
+                ot_object(handle, i, &roi, 0, 0, 0);
+                cv::rectangle(frame,
+                              cv::Point(roi.x, roi.y),
+                              cv::Point(roi.x+roi.w,
+                                        roi.y+roi.h),
+                              cv::Scalar(0,255,255),2,8);
+            }
+        }
 
-		//char path[1024]={0};
-		//sprintf(path, "%s.BMP", eles[0].c_str());
-		//imwrite(path, frame);
-		//continue;
-		//cv::cvtColor(frame,frame,cv::COLOR_BGR2Y)
-		beg = timeStamp();
-		img.format = IMG_FMT_BGRBGR;
-		img.pitch[0] = frame.cols * 3;
-		img.width = frame.cols;
-		img.height = frame.rows;
-		img.nPlane = 1;
-		img.data[0] = (unsigned char *)frame.data;
-
-		int i = ot_setImage(handle, &img);
-
-		Rect_T roi{ 0,0,0,0 };
-		if (isUpdate == false && eles.size() > 1)
-		{
-
-			if (5 == eles.size())
-			{
-				roi.x = int(atof(eles[1].c_str()));
-				roi.y = int(atof(eles[2].c_str()));
-				roi.w = int(atof(eles[3].c_str()));
-				roi.h = int(atof(eles[4].c_str()));
-			}
-			else
-				roi = getRectFromRotatedBB(eles);
-			ot_addObject(handle, &roi, 0);
-			isUpdate = true;
-			myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
-			continue;
-		}
-
-		if (isUpdate)
-		{
-			int count = ot_update(handle);
-			for (int i = 0; i < count; i++)
-			{
-
-				ot_object(handle, i, &roi, 0, 0, 0);
-				cv::rectangle(frame,
-					cv::Point(roi.x, roi.y),
-					cv::Point(roi.x + roi.w,
-						roi.y + roi.h),
-					cv::Scalar(0, 255, 255), 2, 8);
-
-			}
-		}
-
-		myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
-
-		if (isSave)
-			outputV << frame;
-		// Show the FPS
-		end = timeStamp();
-		char str[50] = { 0 };
-		double useTime = (end - beg) / 1000;
-		if (isVisual)
-		{
-			sprintf(str, "Time: %0.2f ms", useTime);
-			cv::putText(frame, str, cv::Point(20, 30),
-			cv::FONT_HERSHEY_SIMPLEX, 1,
-			cv::Scalar(255, 0, 0), 2, 8);
-			cv::imshow("Tracker", frame);
-			char c = (char)cv::waitKey(10);
-			if (27 == c || 'q' == c)
-				break;
-		}
-		total_time += useTime;
+        if (isSave)
+            outputV << frame;
+        // Show the FPS
+        end = timeStamp();   
+        char str[50]={0};
+        sprintf(str,"Time: %0.2f ms", (end-beg)/1000);
+        cv::putText(frame, str, cv::Point(20,30), 
+                    cv::FONT_HERSHEY_SIMPLEX, 1,
+                    cv::Scalar(255,0,0), 2, 8);
+        
+        cv::imshow( "Tracker", frame);
+        char c = (char)cv::waitKey(10);
+        if(27==c || 'q'==c)
+            break;
     }
-	myfile.close();
     ot_destroy(&handle);
-	float fps = totalFrame / total_time * 1000;
-	printf("total time is %0.2f ms and FPS is : %f \n", total_time, fps );
-	myfile.open("fps.txt");
-	myfile << fps;
-	myfile.close();
-// 	int a;
-// 	scanf("%d", &a);
     return 0;
 }
