@@ -642,8 +642,8 @@ int StapleTracker::detectTrans(int idx, float &conf)
 
 
 
-    m_cfs[idx].pos[0] += (pf.x-1-center)/m_cfs[idx].scale*m_cfs[idx].rate2img[0];
-    m_cfs[idx].pos[1] += (pf.y-1-center)/m_cfs[idx].scale*m_cfs[idx].rate2img[1];
+    m_cfs[idx].pos[0] += (pf.x-1-center)/m_cfs[idx].scale;
+    m_cfs[idx].pos[1] += (pf.y-1-center)/m_cfs[idx].scale;
 
    // float pos0=m_cfs[idx].pos[0]/m_cfs[idx].rate2img[0];
   //  float pos1=m_cfs[idx].pos[1]/m_cfs[idx].rate2img[1];
