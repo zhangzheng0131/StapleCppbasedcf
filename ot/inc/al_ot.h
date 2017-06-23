@@ -37,8 +37,7 @@ extern "C" {
                                   int method);
 
     OT_EXPORTS int  ot_setImage(OTHandle handle,
-                                Image_T *img);
-    
+                                Image_T *img, float &);
     OT_EXPORTS int  ot_addObject(OTHandle handle,
                                  Rect_T *pRect,
                                  int cate_id);

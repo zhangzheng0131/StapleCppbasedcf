@@ -62,6 +62,7 @@ inline void limit(cv::Rect_<t> &rect, t width, t height, t x = 0, t y = 0)
 }
 
 template <typename t>
+
 inline cv::Rect getBorder(const cv::Rect_<t > &original, cv::Rect_<t > & limited)
 {
     cv::Rect_<t > res;

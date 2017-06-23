@@ -11,9 +11,8 @@ namespace FFTTools
 {
     // Previous declarations, to avoid warnings
     cv::Mat fftd(cv::Mat img, bool backwards = false);
-    cv::Mat fftd1d(cv::Mat img, int dim, bool backwards=false);
-	//cv::Mat* matCircshift(cv::Mat* mat,int rowMove,int colMove);
-    //CvMat* matCircshift(CvMat* mat,int rowMove,int colMove);
+	cv::Mat* matCircshift(cv::Mat* mat,int rowMove,int colMove);
+    CvMat* matCircshift(CvMat* mat,int rowMove,int colMove);
     cv::Mat real(cv::Mat img);
     cv::Mat imag(cv::Mat img);
     cv::Mat magnitude(cv::Mat img);

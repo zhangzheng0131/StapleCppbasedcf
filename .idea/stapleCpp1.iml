@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/demo/demo_video.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/demo_img_vot.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/demo_img_list.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/demo_vot.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/sakCore/src/rect_core.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/sakCore/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/jsmn/src/jsmn.c" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/jsmn/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/img_resize.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/image.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/fea_icf.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/img_convert.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/cimage.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/src/integral.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/imgProc/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/utils/src/ard_reader.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/utils/src/log.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/sak/utils/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/dollar_hog.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/kcftracker.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/labdata.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/fhog.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/kcftracker_exp.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/stapletracker.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/dssttracker.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/tracker.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/labdata.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/dssttracker.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/tracker.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/ffttools.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/fhog.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/dollar_hog.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/al_ot.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/stapletracker.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/kcftracker.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/version.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/ffttools.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/kcftracker_exp.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/src/version.cpp.in" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/ot/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/benchmark/tracker_benchmark.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/benchmark/CMakeLists.txt" isTestSource="false" />
+    </content>
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="Header Search Paths">
+        <CLASSES>
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.5/include" />
+          <root url="file:///usr/local/include" />
+          <root url="file://$USER_HOME$/software/include" />
+        </CLASSES>
+        <SOURCES>
+          <root url="file:///usr/include" />
+          <root url="file:///usr/lib/gcc/x86_64-redhat-linux/4.8.5/include" />
+          <root url="file:///usr/local/include" />
+          <root url="file://$USER_HOME$/software/include" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+  </component>
+</module>

@@ -63,7 +63,7 @@ Rect_T getRectFromRotatedBB(std::vector<std::string> &eles)
 
 int main(int argc, char* argv[]){
     // Parse the options
-	bool isVisual = false;
+	bool isVisual = true;
     char opts[] = "hv:";
     char oc;
     int method = 0;
@@ -126,8 +126,8 @@ int main(int argc, char* argv[]){
 		img.height = frame.rows;
 		img.nPlane = 1;
 		img.data[0] = (unsigned char *)frame.data;
-
-		int i = ot_setImage(handle, &img);
+        float rate;
+		int i = ot_setImage(handle, &img, rate);
 
 		Rect_T roi{ 0,0,0,0 };
 		if (isUpdate == false && eles.size() > 1)
@@ -135,15 +135,20 @@ int main(int argc, char* argv[]){
 
 			if (5 == eles.size())
 			{
-				roi.x = int(atof(eles[1].c_str()));
-				roi.y = int(atof(eles[2].c_str()));
-				roi.w = int(atof(eles[3].c_str()));
-				roi.h = int(atof(eles[4].c_str()));
+				roi.x = int(atof(eles[1].c_str())/rate);
+				roi.y = int(atof(eles[2].c_str())/rate);
+				roi.w = int(atof(eles[3].c_str())/rate);
+				roi.h = int(atof(eles[4].c_str())/rate);
 			}
 			else
 				roi = getRectFromRotatedBB(eles);
 			ot_addObject(handle, &roi, 0);
 			isUpdate = true;
+            roi.x=(int)(roi.x*rate);
+            roi.y=(int)(roi.y*rate);
+            roi.w=(int)(roi.w*rate);
+            roi.h=(int)(roi.h*rate);
+
 			myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
 			continue;
 		}
@@ -163,7 +168,10 @@ int main(int argc, char* argv[]){
 
 			}
 		}
-
+        roi.x=(int)(roi.x*rate);
+        roi.y=(int)(roi.y*rate);
+        roi.w=(int)(roi.w*rate);
+        roi.h=(int)(roi.h*rate);
 		myfile << roi.x << " " << roi.y << " " << roi.w << " " << roi.h << "\n";
 
 

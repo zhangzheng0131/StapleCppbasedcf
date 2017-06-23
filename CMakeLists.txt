@@ -15,6 +15,7 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
    cmake_minimum_required(VERSION 2.8)
    project(tracker)
 
+   ###find_package(OpenCV 2.4.11 REQUIRED)
    find_package(OpenCV REQUIRED)
    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
    set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
@@ -24,7 +25,7 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
    include_directories(${SAK_INCLUDE_DIR})
 else()
     ### Set the INCLUDE_DIR for parent scope
-    set(TRACK_INCLUDE_DIR 
+    set(TRACK_INCLUDE_DIR
         ${CMAKE_CURRENT_SOURCE_DIR}/ot/inc
         PARENT_SCOPE)   
 endif() 

@@ -20,100 +20,99 @@ cv::Mat fftd1d(cv::Mat img, int dim, bool backwards)
     }
     return img;
 }
- //   CvMat * matCircshift( CvMat *mat,int rowMove,int colMove) //矩阵平移
-//{
-// int i,j,k;
+CvMat* matCircshift(CvMat* mat,int rowMove,int colMove) //矩阵平移
+{
+ int i,j,k;
  
-// if(rowMove>=0) //rowMove>=0 矩阵下移
-// {
-//  CvMat * temp_rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
-//  CvMat * rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
-//  while(rowMove--)
-//  {
-//   cvGetRow(mat,temp_rowMat,(mat->rows)-1);
-//   cvCopy(temp_rowMat,rowMat,NULL );
-//   for(i=mat->rows-1;i>0;i--)
-//   {
-//    for(j=0;j<mat->cols;j++)
-//    {
-//     cvmSet(mat,i,j,cvmGet(mat,i-1,j));
-//    }
-//    }
-//   }
-//   for(k=0;k<mat->cols;k++)
-//   {
-//    cvmSet(mat,0,k,cvmGet(rowMat,0,k));
-//   }
-//  }
-// }
-// else  //rowMove<0 矩阵上移
-// {
-//  rowMove=-rowMove;
-//  CvMat* temp_rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
-//  CvMat* rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
-//  while(rowMove--)/
-//  {
-//   cvGetRow(mat,temp_rowMat,0);
-// cvCopy(temp_rowMat,rowMat,NULL);
-//   for(i=0;i<mat->rows-1;i++)
-//   {
-//    for(j=0;j<mat->cols;j++)
-//    {
-//     cvmSet(mat,i,j,cvmGet(mat,i+1,j));/
-//    }
-//   }
-//   for(k=0;k<mat->cols;k++)
-//   {
-//    cvmSet(mat,mat->rows-1,k,cvmGet(rowMat,0,k));
-//   }
-//  }
-// }
+ if(rowMove>=0) //rowMove>=0 矩阵下移
+ {
+  CvMat* temp_rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
+  CvMat* rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
+  while(rowMove--)
+  {
+   cvGetRow(mat,temp_rowMat,(mat->rows)-1);
+   cvCopy(temp_rowMat,rowMat,NULL );
+   for(i=mat->rows-1;i>0;i--)
+   {
+    for(j=0;j<mat->cols;j++)
+    {
+     cvmSet(mat,i,j,cvmGet(mat,i-1,j));
+    }
+   }
+   for(k=0;k<mat->cols;k++)
+   {
+    cvmSet(mat,0,k,cvmGet(rowMat,0,k));
+   }
+  }
+ }
+ else  //rowMove<0 矩阵上移
+ {
+  rowMove=-rowMove;
+  CvMat* temp_rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
+  CvMat* rowMat=cvCreateMat(1,mat->cols,CV_32FC1);
+  while(rowMove--)
+  {
+   cvGetRow(mat,temp_rowMat,0);
+   cvCopy(temp_rowMat,rowMat,NULL);
+   for(i=0;i<mat->rows-1;i++)
+   {
+    for(j=0;j<mat->cols;j++)
+    {
+     cvmSet(mat,i,j,cvmGet(mat,i+1,j));
+    }
+   }
+   for(k=0;k<mat->cols;k++)
+   {
+    cvmSet(mat,mat->rows-1,k,cvmGet(rowMat,0,k));
+   }
+  }
+ }
    
-// if(colMove>=0) //colMove>=0 右移
-// {
-//  CvMat* temp_colMat=cvCreateMat(mat->rows,1,CV_32FC1);
-//  CvMat* colMat=cvCreateMat(mat->rows,1,CV_32FC1);
-//  while(colMove--)
-//  {
-//   cvGetCol(mat,temp_colMat,(mat->cols)-1);
-//   cvCopy(temp_colMat,colMat,NULL);
-//   for(i=mat->cols-1;i>0;i--)
-//   {
-//    for(j=0;j<mat->rows;j++)
-//    {
-//     cvmSet(mat,j,i,cvmGet(mat,j,i-1));
-//    }
-//   }
-//   for(k=0;k<mat->rows;k++)
-//   {
-//    cvmSet(mat,k,0,cvmGet(colMat,k,0));
- //  }
- // }
-// }
-// else //colMove<0 左移
-// {
-//  colMove=-colMove;
-// CvMat* colMat=cvCreateMat(mat->rows,1,CV_32FC1);
-//  CvMat* temp_colMat=cvCreateMat(mat->rows,1,CV_32FC1);
-//  while(colMove--)
-//  {
-//   cvGetCol(mat,temp_colMat,0);
-//   cvCopy(temp_colMat,colMat,NULL);/
-//   for(i=0;i<mat->cols-1;i++)
-//   {
-//    for(j=0;j<mat->rows;j++)
-//    {
-//     cvmSet(mat,j,i,cvmGet(mat,j,i+1));
-//    }
-//   }
-//   for(k=0;k<mat->rows;k++)
-//   {
-//    cvmSet(mat,k,mat->cols-1,cvmGet(colMat,k,0));
-//   }
-//  }
-// }
-// return mat;/
-//}
+ if(colMove>=0) //colMove>=0 右移
+ {
+  CvMat* temp_colMat=cvCreateMat(mat->rows,1,CV_32FC1);
+  CvMat* colMat=cvCreateMat(mat->rows,1,CV_32FC1);
+  while(colMove--)
+  {
+   cvGetCol(mat,temp_colMat,(mat->cols)-1);
+   cvCopy(temp_colMat,colMat,NULL);
+   for(i=mat->cols-1;i>0;i--)
+   {
+    for(j=0;j<mat->rows;j++)
+    {
+     cvmSet(mat,j,i,cvmGet(mat,j,i-1));
+    }
+   }
+   for(k=0;k<mat->rows;k++)
+   {
+    cvmSet(mat,k,0,cvmGet(colMat,k,0));
+   }
+  }
+ }
+ else //colMove<0 左移
+ {
+  colMove=-colMove;
+  CvMat* colMat=cvCreateMat(mat->rows,1,CV_32FC1);
+  CvMat* temp_colMat=cvCreateMat(mat->rows,1,CV_32FC1);
+  while(colMove--)
+  {
+   cvGetCol(mat,temp_colMat,0);
+   cvCopy(temp_colMat,colMat,NULL);
+   for(i=0;i<mat->cols-1;i++)
+   {
+    for(j=0;j<mat->rows;j++)
+    {
+     cvmSet(mat,j,i,cvmGet(mat,j,i+1));
+    }
+   }
+   for(k=0;k<mat->rows;k++)
+   {
+    cvmSet(mat,k,mat->cols-1,cvmGet(colMat,k,0));
+   }
+  }
+ }
+ return mat;
+}
 	
 	
 cv::Mat fftd(cv::Mat img, bool backwards)

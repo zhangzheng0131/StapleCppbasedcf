@@ -2,11 +2,16 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <armadillo>
 
 #include <opencv2/opencv.hpp>
 #include "al_ot.h"
 #include "log.h"
 #include "comdef.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+//using namespace arma;
 
 int usage()
 {
@@ -18,6 +23,9 @@ int usage()
     printf("\th: Print the help information\n");
     return 0;
 }
+
+//int frameW;
+//int frameH;
 
 std::vector<std::string> split(std::string in)
 {
@@ -67,6 +75,7 @@ int main(int argc, char* argv[]){
     char oc;
     int method = 0;
     bool isSave = false;
+    int numdead=1;
     while((oc = getopt_t(argc, argv, opts)) != -1)
     {
         switch(oc)
@@ -97,19 +106,93 @@ int main(int argc, char* argv[]){
     
     std::string line, name;
     cv::Mat frame;
+
+
     double beg, end, total_time=0;
     bool isUpdate = false;
-    cv::namedWindow("Tracker", 0 );
+    //cv::namedWindow("Tracker1", 1 );
+    //cv::imshow("Tracker:",frame);
     while(!fileList.eof())
     {
         std::getline(fileList, line);
         std::vector<std::string> eles = split(line);
         if (eles.size()<1)
             break;
-        frame = cv::imread(eles[0].c_str());
-        if (frame.empty())
-            break;
 
+       // mat A= randu<mat>(5,5)*10;
+       // A.print("A;\n");
+
+        printf("frame NO.%d: \n",numdead);
+        numdead++;
+        std::string a="afsd";
+       // if(a.compare("afsd")==0)
+      //  {
+      //      printf("a.compare return 0 when the same string are compared\n");
+      //  }
+      //  else{
+      //      printf("a.compare return 1 when the same string are compared\n");
+      //  }
+        frame = cv::imread(eles[0].c_str());
+       // frameW=frame.cols;
+        //frameH=frame.rows;
+
+       // std::vector<cv::Mat> aplit12;
+        //cv::split(frame, aplit12);
+       // cv::Mat atemp=cv::Mat(aplit12[0].cols,aplit12[0].rows,CV_8U);
+       // cv::transpose(aplit12[0],atemp);
+       // cv::Mat atemp2=cv::Mat(aplit12[0].cols,aplit12[0].rows,CV_32F);
+        //atemp.convertTo(atemp2, CV_32F);
+        //arma::mat Amat( reinterpret_cast<double *>(atemp2.data),atemp.rows,atemp.cols);
+        //arma::mat Amat( reinterpret_cast<int*>(atemp.data),atemp.rows,atemp.cols);
+
+      // mat A = aplit12[0];
+       // A.print("frame[0]:\n");
+        //Amat.print("A;\n");
+       // printf("zhangzheng:\n");
+        int izz=0;
+
+        //output file
+        FILE* f = fopen("/tmp/data.txt", "w+");
+
+        //std::vector<cv::Mat> splitfr;
+        //cv::split(frame,splitfr);
+
+       /* for(int c=0;c<frame.channels();c++)
+            for(int r=0;r<frame.rows;r++)
+                for(int j=0;j<frame.cols;j++) {
+
+                    //printf("%d\t", frame.data[izz]);
+                    fprintf(f, "%d\n", frame.data[izz]);
+                    //printf("%d ", splitfr[c].at<CV_8U>(r, j));
+                    izz++;
+                }
+
+        fclose(f);*/
+       // printf("-----------------end-----------------");
+
+       /* for(int i=0;i<frame.rows;i++)
+        {
+            for(int j=0;j<frame.cols;j++)
+            {
+                for(int n=0;n<frame.channels();n++)
+                {
+                    if(n==0 ) {
+                    // printf("%d\t", z.data[i * roiGrayzz.cols + j]);
+                      //  printf("%d\t", frame.data[izz]);
+                        //printf("%d\t", pzz[0]);
+                    }
+                    if(j==frame.cols-1) printf("\n");
+                    // pzz++;
+                    izz++;
+                }
+            }
+        }*/
+        if (frame.empty()) {
+            printf("cannot access frame\n");
+            break;
+        }
+        //cv::imshow( "Tracker1", frame);
+        //cvWaitKey(10);
         // Open saved video
         if (isSave && (!outputV.isOpened()))
         {
@@ -138,7 +221,12 @@ int main(int argc, char* argv[]){
         img.height = frame.rows;
         img.nPlane = 1;
         img.data[0] = (unsigned char *)frame.data;
-        ot_setImage(handle, &img);
+        Rect_T roi;
+        int x,y,w,h;
+        float rate;
+        ot_setImage(handle, &img, rate);
+
+        //m_maxSide;
 
         
         if (isUpdate==false && eles.size()>1)
@@ -146,14 +234,14 @@ int main(int argc, char* argv[]){
             Rect_T roi;
             if (5==eles.size())
             {
-                roi.x = int(atof(eles[1].c_str()));
-                roi.y = int(atof(eles[2].c_str()));
-                roi.w = int(atof(eles[3].c_str()));
-                roi.h = int(atof(eles[4].c_str()));
+                roi.x = int(atof(eles[1].c_str())/rate);
+                roi.y = int(atof(eles[2].c_str())/rate);
+                roi.w = int(atof(eles[3].c_str())/rate);
+                roi.h = int(atof(eles[4].c_str())/rate);
             }
             else
                 roi = getRectFromRotatedBB(eles);
-            ot_addObject(handle, &roi, 0);
+            ot_addObject(handle, &roi,0);
             isUpdate = true;
             continue;
         }
@@ -173,10 +261,12 @@ int main(int argc, char* argv[]){
             }
         }
 
+     //   isSave=true;
         if (isSave)
             outputV << frame;
         // Show the FPS
-        end = timeStamp();   
+        end = timeStamp();
+        isSave=false;
         char str[50]={0};
         sprintf(str,"Time: %0.2f ms", (end-beg)/1000);
         cv::putText(frame, str, cv::Point(20,30), 

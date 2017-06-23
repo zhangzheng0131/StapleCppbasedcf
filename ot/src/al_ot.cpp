@@ -28,10 +28,10 @@ OT_EXPORTS OTHandle ot_create(int maxSide,
 }
 
 OT_EXPORTS int  ot_setImage(OTHandle handle,
-                            Image_T *img)
+                            Image_T *img,float & rate)
 {
     Tracker *pH = (Tracker *)(handle);
-    return pH->setImage(*img);
+    return pH->setImage(*img,rate);
 }
 
 OT_EXPORTS int  ot_addObject(OTHandle handle,
