@@ -17,6 +17,7 @@ typedef struct tagStapleMats
     cv::Mat y;
     cv::Mat hann;
     cv::Mat X;
+    cv::Mat scale_basis;
     // by zz in 2017/05/16
     int s_filt_sz[2];
     int b_filt_sz[2];
@@ -27,15 +28,19 @@ typedef struct tagStapleMats
     ///std::vector<cv::Mat>  sf;
     //std::vector<cv::Mat>  Ldsf;
     //float *df;
+
     cv::Mat df;
     cv::Mat sf;
     cv::Mat Ldsf;
+    cv::Mat ysf;
+    cv::Mat firstImg;
     std::vector<cv::Mat>  P;
     cv::Mat ZX;
     cv::Mat numVZZ;
     std::vector<cv::Mat> feaFFT;
     cv::Mat imgor;
-
+    cv::Mat s_num;
+    cv::Mat sf_den;
     int muo;
 ////    int pfcell_size;
     int mumax;
@@ -43,7 +48,8 @@ typedef struct tagStapleMats
     //TransPWP
     cv::Mat bgHist;
     cv::Mat fgHist;
-
+    int last_target_sz[2];
+    int last_pos[2];
     float pos[2];
     int target_size[2];
     float target_size1[2];
@@ -54,7 +60,7 @@ typedef struct tagStapleMats
     int norm_delta_size;
     float scale;
     float window_sz[2];
-float pinterpScaleFactors[17];
+//float pinterpScaleFactors[33];
 //   float pinterpScaleFactors[33];
 
     // ScaleCF
@@ -207,11 +213,22 @@ private:
     int resize_image;
     int resize_scale;
     int pfcell_size;
+    float pbase_target_sz[2];//=(float)(target_sz[0]);
+    int pfeatures_sz[2];//=b_filt_sz[0];
+    int psz[2];//=sz[0];
+    float pinterpScaleFactors[33];
+    int pscale_model_sz[2];//=floor(m_cfs[idx].target_size[0]*scale_model_factor);
+    //pscale_model_sz[1];//=floor(m_cfs[idx].target_size[1]*scale_model_factor);
+    float pmin_scale_factor;//=pow(scale_step,ceil(log(max(5/psz[0], 5/psz[1])))/log(scale_step));
+    float pmax_scale_factor;//=pow(scale_step,floor(log(min(roi.h/target_sz[0],roi.w/target_sz[1]))));
+    int ps_num_compressed_dim;//=nScales;
 
     int MaxItr;
+    int pmax_scale_dim;
     //
     float BACF_lr;
     cv::Mat m_scale_y;
+    cv::Mat scale_window;
     std::vector<StapleHandle> m_cfs;
 };
 
