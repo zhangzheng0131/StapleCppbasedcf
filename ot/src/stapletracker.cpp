@@ -356,6 +356,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id) {
     }
 
     float search_area= m_cfs[idx].target_size[0]*m_cfs[idx].target_size[1]*filter_size*filter_size;
+    //printf("m_target_size 88888: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
 
     float currentScaleFactor = sqrt(search_area/fix_model_size);
     //cv::Mat mfirstImg = m_img;
@@ -475,6 +476,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id) {
     pmin_scale_factor=pow(scale_step,ceil(log(((5/psz[0])>(5/psz[1])?(5/psz[0]):(5/psz[1]))))/log(scale_step));
     pmax_scale_factor=pow(scale_step,floor(log(roi.h/target_sz[0]<roi.w/target_sz[1]?(roi.h/target_sz[0]):(roi.w/target_sz[1]))));
     ps_num_compressed_dim=nScales;
+    //printf("m_target_size 333333: %f , %f\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
 
     float  ys[nScales];
     cv::Mat ys1=cv::Mat(cv::Size(nScales,1),CV_32FC1);
@@ -499,7 +501,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id) {
     cv::Mat hann1t = cv::Mat(cv::Size(m_cfs[idx].ysf.cols,1), CV_32F, cv::Scalar(0));
     for (int i = 0; i < hann1t.cols; i++) {
         hann1t.at<float>(0, i) = 0.5 * (1 - std::cos(2 * PI_T * i / (hann1t.cols - 1)));
-        printf("%f \n",hann1t.at<float>(0, i) );
+        //printf("%f \n",hann1t.at<float>(0, i) );
     }
     //pmax_scale_dim=1;
 
@@ -508,7 +510,7 @@ int StapleTracker::add(Rect_T &roi, int cate_id) {
     roiImg = getSubWin(idx);
 
     trainTransCF(idx, roiImg, 1.f, true,0.0125);//BACF_lr=0.0125
-    trainTransPWP(idx, roiImg, 1.f, true);
+    //trainTransPWP(idx, roiImg, 1.f, true);
     trainScaleCF(idx, 1.f, true);
     m_curObjNum ++;
     return 0;
@@ -565,7 +567,7 @@ int StapleTracker::update()
             cv::Mat roiImg;
             roiImg = getSubWin(i);
             trainTransCF(i, roiImg, m_trans_lr_cf, false,0.0125);
-            trainTransPWP(i, roiImg, m_trans_lr_pwp,false);
+            //trainTransPWP(i, roiImg, m_trans_lr_pwp,false);
             //trainScaleCF(i,1.0f,false);
             if (confS > train_th)
                 trainScaleCF(i, m_scale_lr, false);
@@ -578,6 +580,8 @@ int StapleTracker::update()
 Rect_T StapleTracker::getShowRect(int idx)
 {
     Rect_T roi;
+    //printf("m_target_size 4444444: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
+
     roi.x = m_cfs[idx].pos[0]-m_cfs[idx].target_size[0]/2;
     roi.y = m_cfs[idx].pos[1]-m_cfs[idx].target_size[1]/2;
     roi.w = m_cfs[idx].target_size[0];
@@ -850,7 +854,7 @@ cv::Mat StapleTracker::getSubWinPWP(int idx)
     // Get sub Image
     if(roi.width<=0||roi.height<=0)
     {
-        printf("roi.width or roi.height no more than 0\n");
+        printf("roi.width or roi.height no more than 0 No.2\n");
     }
     cv::Mat image = cv::Mat(m_img.height,m_img.width,
                             CV_8UC3, m_img.data[0]);
@@ -875,6 +879,8 @@ cv::Mat StapleTracker::getSubWin(int idx)
     //roi.height = round(m_cfs[idx].bg_size[1]);
     //roi.width=round(m_cfs[idx].target_size[0]);
     //roi.height = round(m_cfs[idx].target_size[1]);
+
+    //printf("m_target_size 555555: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
     roi.width = floor(m_cfs[idx].window_sz[0]*m_cfs[idx].currentScaleFactor);
     roi.height = floor(m_cfs[idx].window_sz[1]*m_cfs[idx].currentScaleFactor);
 
@@ -886,7 +892,7 @@ cv::Mat StapleTracker::getSubWin(int idx)
     // roi.width=tw;/m_cfs[idx].rate2img[0];
     //roi.height=th;/m_cfs[idx].rate2img[1];
     roi.x = floor(cx - floor(roi.width/2.f)+1);
-   roi.y = floor(cy - floor(roi.height/2.f)+1);
+    roi.y = floor(cy - floor(roi.height/2.f)+1);
     int bg_w = round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
     int bg_h = round(m_cfs[idx].bg_size[1]*m_cfs[idx].scale);
 
@@ -895,7 +901,7 @@ cv::Mat StapleTracker::getSubWin(int idx)
     cv::Mat image = cv::Mat(m_img.height,m_img.width,
                             CV_8UC3, m_img.data[0]);
 
-   // cvNamedWindow("test image size(640* 480 ??) ", 1);
+    //cvNamedWindow("test image size(640* 480 ??) ", 1);
 
     //if(roi.x<=0){roi.x=0;}
     //if(roi.x>=image.cols){roi.x=image.cols;}
@@ -903,12 +909,12 @@ cv::Mat StapleTracker::getSubWin(int idx)
     //if(roi.y<=0){roi.y=0;}
     if(roi.width<=0||roi.height<=0)
     {
-        printf("roi.width or roi.height no more than 0\n");
+        printf("roi.width or roi.height no more than 0 No.3\n");
     }
     cv::Mat ztemp = RectTools::subwindow(image, roi,
                                      cv::BORDER_REPLICATE);
-    cv::imshow("a",ztemp);
-    cvWaitKey(10);
+    //cv::imshow("a",ztemp);
+   // cvWaitKey(10);
     int izz=0;
  /*   for(int i=0;i<ztemp.rows;i++)
     {
@@ -928,8 +934,8 @@ cv::Mat StapleTracker::getSubWin(int idx)
     }*/
 
    // cvNamedWindow("sf0,2");
-    cv::imshow("2",ztemp);
-    cvWaitKey(100);
+    //cv::imshow("2",ztemp);
+    //cvWaitKey(100);
     cv::Mat z=cv::Mat::zeros(m_cfs[idx].window_sz[0], m_cfs[idx].window_sz[1],CV_32FC3);
     //if (z.cols != bg_w || z.rows != bg_h)
     //    cv::resize(z, z, cv::Size(bg_w, bg_h));
@@ -1031,9 +1037,9 @@ cv::Mat StapleTracker::getSubWin(int idx)
         printf("\n");
     }*/
 
-    cvNamedWindow("img_patch",1);
-    cv::imshow("img_patch",z);
-    cvWaitKey(80);
+    //cvNamedWindow("img_patch",1);
+    //cv::imshow("img_patch",z);
+    //cvWaitKey(80);
     //resize(z, z, cv::Size(bg_w bg_h));
 
     //return ztemp;
@@ -1180,8 +1186,6 @@ int StapleTracker::getTransFeaCF(cv::Mat &roiImg1,
                // if(j==0) {
                //     printf("zz: %f \t ", pa[0]);
                // }
-               // printf("fuck off:feaHog: %f\n", ((float)feaHog.data[p1212])/256-0.5);
-               // printf("fuck off:feaHog: %f\n", ((float)feaHog.data[p1212])/256);
                 if((((float)feaHog.data[p1212])/256-0.5) > maxzz ) {maxzz= ((float)feaHog.data[p1212])/256-0.5;}
                 a++;
                 p1212++;
@@ -1290,7 +1294,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
                                        feaCF.cols);
         std::vector<cv::Mat>feaCFhann;
         cv::split(m_cfs[idx].hann,feaCFhann);
-        for(int izz=0;izz<m_cfs[idx].hann.rows;izz++)
+        /*for(int izz=0;izz<m_cfs[idx].hann.rows;izz++)
           {
               for(int jzz=0;jzz<m_cfs[idx].hann.cols;jzz++)
               {
@@ -1305,7 +1309,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
                  // }
                   if(jzz==m_cfs[idx].hann.cols-1) printf("\n");
               }
-          }
+          }*/
 
 
 
@@ -1339,7 +1343,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
     float * feazz=(float *)(feaCF.data);
     std::vector<cv::Mat>feaCF1;
     cv::split(feaCF,feaCF1);
-   for(int izz=0;izz<feaCF.rows;izz++)
+   /*for(int izz=0;izz<feaCF.rows;izz++)
     {
         for(int jzz=0;jzz<feaCF.cols;jzz++)
         {
@@ -1354,7 +1358,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
             }
             if(jzz==feaCF.cols-1) printf("\n");
         }
-    }
+    }*/
 
 
     //std::vector<cv::Mat> feaFFT;
@@ -1493,9 +1497,9 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
         m_cfs[idx].num = (1-lr)*m_cfs[idx].num + lr*num;
         m_cfs[idx].den = (1-lr)*m_cfs[idx].den + lr*den;
         m_cfs[idx].den = (1-lr)*m_cfs[idx].den + lr*den;
-       // m_cfs[idx].numVZZ = (1-lr)*m_cfs[idx].numVZZ + lr*numVZZ;
-       // m_cfs[idx].ZX = (1-lr)*m_cfs[idx].ZX + lr*ZX;
-       // m_cfs[idx].X = (1-lr)*m_cfs[idx].X + lr*feaFFT;
+        m_cfs[idx].numVZZ = (1-lr)*m_cfs[idx].numVZZ + lr*numVZZ;
+        m_cfs[idx].ZX = (1-lr)*m_cfs[idx].ZX + lr*ZX;
+        m_cfs[idx].X = (1-lr)*m_cfs[idx].X + lr*feaFFT;
         //by zz in 2017/5/18
         tempZX=numVZZ.clone();
         tempZZ=ZX.clone();
@@ -1503,7 +1507,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
         cv::split(tempZX,feasplit);
         cv::split(tempZZ,feasplit1);
       //  float *pA = (float *)(m_cfs[idx].ZX.data);
-        float *pnumvZZ = (float *)(m_cfs[idx].numVZZ.data);
+       /* float *pnumvZZ = (float *)(m_cfs[idx].numVZZ.data);
         float *pDen = (float *)(m_cfs[idx].den.data);
         float *pZX = (float *)(m_cfs[idx].ZX.data);
         float *ptZZ= (float *)(numVZZ.data);
@@ -1528,9 +1532,9 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
                           pX[0] =pX[0]*(1-BACF_lr) + pfeaFFT[0]*BACF_lr;
                           pX[1] =pX[1]*(1-BACF_lr) + pfeaFFT[1]*BACF_lr;
                         //  printf("m_ZX: %f+%fi +++++m_ZZ: %f+%fi++++ m_X: %f+%fi \n",pZX[0],pZX[1],pnumvZZ[0],pnumvZZ[1],pX[0],pX[1]);
-                      if(c==0)
+                     /* if(c==0)
                       {
-                          printf("zz:%f + %f i\t",pnumvZZ[0],pnumvZZ[1]);
+                        //  printf("zz:%f + %f i\t",pnumvZZ[0],pnumvZZ[1]);
                           //printf("zx: %f + %f i\t",pZX[0],pZX[1]);
                           //printf("x :%f + %f i\t",pX[0],pX[1]);
                           if(w==feasplit[0].cols-1)
@@ -1547,7 +1551,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
                   }
               }
           }
-        }
+        }*/
         //delete(pnumvZZ);
        // delete(pDen);
        // delete(pZX);
@@ -1576,7 +1580,7 @@ int StapleTracker:: trainTransCF(int idx, cv::Mat &roiImg,
                 pA1[0]=pNum1[0]*factor;
               pA1[1]=pNum1[1]*factor;
 
-                printf("m_num: %f+%fi+++ m_alpha: %f+%fi\n",pNum1[0],pNum1[1],pA1[0],pA1[1]);
+              //  printf("m_num: %f+%fi+++ m_alpha: %f+%fi\n",pNum1[0],pNum1[1],pA1[0],pA1[1]);
                 pA1 += 2;
                 pNum1 += 2;
             }
@@ -1651,7 +1655,7 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
        // b1.data[0]=-2.0;
         //b1.data[1]=4.0;
 
-        printf("a1:: %f,%f\n",a2[0].at<float>(0,0), a2[1].at<float>(0,0));
+        //printf("a1:: %f,%f\n",a2[0].at<float>(0,0), a2[1].at<float>(0,0));
 
         std::cout<<a1.data[0]<<a1.data[1];
 
@@ -1726,19 +1730,19 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                     //float
                     pasf[0]=split5[2*n].at<float>(h,w);
                     pasf[1]=split5[2*n+1].at<float>(h,w);
-                    if(n==0) {
+                   /* if(n==0) {
                         //printf("m_df: %f + %f i \t",split1[2 * n].at<float>(h, w), split1[2 * n + 1].at<float>(h, w));
                         //printf("m_numVZZ: %f + %f i \t",split2[2 * n].at<float>(h, w), split2[2 * n + 1].at<float>(h, w));
                        // printf("m_ZX: %f + %f i \t",split3[2 * n].at<float>(h, w), split3[2 * n + 1].at<float>(h, w));
                         //printf("m_Ldsf: %f + %f i \t",split4[2 * n].at<float>(h, w), split4[2 * n + 1].at<float>(h, w));
                         printf("m_sf: %f + %f i \t",split5[2 * n].at<float>(h, w), split5[2 * n + 1].at<float>(h, w));
 
-                    }
+                    }*/
                     pasf+=2;
                     izz1++;
                     //numZ += 2;
                 }
-                if(w==X.cols-1){printf("\n");}
+               // if(w==X.cols-1){printf("\n");}
             }
         }
 
@@ -1770,14 +1774,14 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                     split1[2*n].at<float>(h,w) = (split5[2*n].at<float>(h,w) * m_cfs[idx].muo + split4[2*n].at<float>(h,w) ) / at;
                     split1[2*n+1].at<float>(h,w)  = ( split5[1+2*n].at<float>(h,w)  * m_cfs[idx].muo + split4[2*n+1].at<float>(h,w)) / at;
                     if(n==0) {
-                        printf("m_df: %f + %f i  \t", split1[2 * n].at<float>(h, w), split1[2 * n + 1].at<float>(h, w));
+                    //    printf("m_df: %f + %f i  \t", split1[2 * n].at<float>(h, w), split1[2 * n + 1].at<float>(h, w));
                     }
                     pzzzdf[0]=split1[2 * n].at<float>(h, w);
                     pzzzdf[1]=split1[2 * n + 1].at<float>(h, w);
                     pzzzdf+=2;
                     izz1+=2;
                 }
-                if(w==X.cols-1){printf("\n");}
+               // if(w==X.cols-1){printf("\n");}
             }
         }
         //test ifft through dft(inverse);
@@ -1829,8 +1833,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                     pRes3[1]=dftemp[2*c+1].at<float>(h,w);
                    if(c==0)
                    {
-                       printf("xf: %f + %F i \t", pRes3[0],pRes3[1]);
-                       if(w==m_cfs[idx].df.cols -1){printf("\n");}
+                     //  printf("xf: %f + %F i \t", pRes3[0],pRes3[1]);
+                     //  if(w==m_cfs[idx].df.cols -1){printf("\n");}
                    }
                    pRes3 += 2;
                     pdfz2 += 2;
@@ -1849,11 +1853,11 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                 for(int nzz=0; nzz< splitx.size(); nzz++)
                 {
                     if(nzz==0) {
-                        printf("x1zz: %f + %f i \t", splitx[nzz * 2].at<float>(mzz, hzz),
-                               splitx[nzz * 2 + 1].at<float>(mzz, hzz));
+                     //   printf("x1zz: %f + %f i \t", splitx[nzz * 2].at<float>(mzz, hzz),
+                     //          splitx[nzz * 2 + 1].at<float>(mzz, hzz));
                     }
                 }
-                if(hzz==xtem.cols-1){printf("\n");}
+                //if(hzz==xtem.cols-1){printf("\n");}
             }
         }
 
@@ -1889,9 +1893,9 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                 for(int nzz=0;nzz<floor(azztemp.channels()/2);nzz++)
                 {
                     if(nzz==0) {
-                        printf("matzz: %f + %f i \t", splazz[nzz*2].at<float>(izz,jzz), splazz[nzz*2 +1].at<float>(izz,jzz));
+                      //  printf("matzz: %f + %f i \t", splazz[nzz*2].at<float>(izz,jzz), splazz[nzz*2 +1].at<float>(izz,jzz));
                         //printf("matzz: %f + %f i \t", pmat[0], pmat[1]);
-                        if(jzz==azztemp.rows-1){printf("\n");}
+                      //  if(jzz==azztemp.rows-1){printf("\n");}
                     }
                     //pmat+=2;
                 }
@@ -1912,7 +1916,7 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
         float * pmatemp= (float *)(matemp.data);
         std::vector<cv::Mat> splma;
         cv::split(matemp,splma);
-        printf("matemp:\n");
+       // printf("matemp:\n");
         for(int i=0;i<matemp.rows;i++)
         {
             for(int j=0;j<matemp.cols;j++)
@@ -1921,8 +1925,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                 {
                     if(n==0) {
                         //printf("matemp: %f + %f i \t", pmatemp[0], pmatemp[1]);
-                        printf("matemp: %f + %f i \t",splma[2*n].at<float>(i,j),splma[2*n+1].at<float>(i,j));
-                        if(j==matemp.cols-1){printf("\n");}
+                      //  printf("matemp: %f + %f i \t",splma[2*n].at<float>(i,j),splma[2*n+1].at<float>(i,j));
+                      //  if(j==matemp.cols-1){printf("\n");}
                     }
                     pmatemp+=2;
                 }
@@ -1955,8 +1959,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                 {
                     if(n==0) {
                         //printf("zztemp: %f + %f i \t", pmate[0], pmate[1]);
-                        printf("r: %f + %f i \t", splir[2*n].at<float>(i,j), splir[2*n+1].at<float>(i,j));
-                        if(j==r.cols-1){printf("\n");}
+                      //  printf("r: %f + %f i \t", splir[2*n].at<float>(i,j), splir[2*n+1].at<float>(i,j));
+                      //  if(j==r.cols-1){printf("\n");}
                     }
                    // pmate+=2;
                 }
@@ -2016,7 +2020,7 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
         //printf("Y^_^Y yap\n");
         std::vector<cv::Mat> splipa;
         cv::split(padded,splipa);
-        for(int i=0 ; i< padded.rows; i++) {
+       /* for(int i=0 ; i< padded.rows; i++) {
             for (int j = 0; j < padded.cols; j++) {
                 for( int n=0; n< floor(splipa.size()/2); n++)
                 {
@@ -2026,7 +2030,7 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                     }
                 }
             }
-        }
+        }*/
 
         cv::Mat atemp=zztemp;
 
@@ -2047,8 +2051,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                         pdf2[0]=xtemp1[2*c].at<float>(h,w);
                         pdf2[1]=xtemp1[2*c+1].at<float>(h,w);
                         if(c==0){
-                            printf("resF: %f + %f i \t",pdf2[0],pdf2[1]);
-                            if(w==m_cfs[idx].df.cols-1){printf("\n");}
+                        //    printf("resF: %f + %f i \t",pdf2[0],pdf2[1]);
+                        //    if(w==m_cfs[idx].df.cols-1){printf("\n");}
                         }
                            // printf("m_df: %f+%fi  +++ resF: %f+%fi \n",split1[2*c].at<float>(h,w),split1[2*c+1].at<float>(h,w),pRes3[0],pRes3[1]);
                         pRes3 += 2;
@@ -2076,8 +2080,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                    // pmcf[0]=pxt[0];
                    // pmcf[1]=pxt[1];
                     if(nz==0) {
-                        printf("m_df2: %f + %f i\t", pmcf[0], pmcf[1]);
-                        if(jz==xtemp.cols-1){printf("\n");}
+                       // printf("m_df2: %f + %f i\t", pmcf[0], pmcf[1]);
+                       // if(jz==xtemp.cols-1){printf("\n");}
                     }
                     pmcf+=2;
                    // pxt+=2;
@@ -2203,8 +2207,8 @@ bool StapleTracker::ECF(int idx, int muo, cv::Mat &X,int Nf,int term,int minItr,
                             //printf("m_sf: %f + %f i \t", pS5[0], pS5[1]);
                             //printf("m_df: %f + %f i \t", pD5[0], pD5[1]);
                             //  printf("diff between sf and Ldsf %f + %f i \t",(pS5[0] - pD5[0]) * m_cfs[idx].muo,(pS5[1] - pD5[1]) * m_cfs[idx].muo);
-                               printf("m_Ldsf: %f + %f i \t", pL5[0], pL5[1]);
-                              if(w==X.cols-1){printf("\n");}
+                            //   printf("m_Ldsf: %f + %f i \t", pL5[0], pL5[1]);
+                            //  if(w==X.cols-1){printf("\n");}
                         }
                         pL5 += 2;
                     }
@@ -2447,8 +2451,8 @@ int StapleTracker::applyHann2D(cv::Mat& fea, cv::Mat& hann)
                 //printf("feadata:%f || hanndata: %f\n", pFea[c], factor);
                 pFea[c] = pFea[c] * factor;
                 if(c==0) {
-                   printf("afnn: %f\t", pFea[c]);
-                    if(w==width-1){printf("\n");}
+                  // printf("afnn: %f\t", pFea[c]);
+                   // if(w==width-1){printf("\n");}
                 }
               }
             pFea += channels;
@@ -2479,7 +2483,7 @@ cv::Mat StapleTracker::createGaussianPeak(int idx, int sizey, int sizex, float s
 
     int syh = (sizey) / 2;
     int sxh = (sizex) / 2;
-
+    //printf("m_target_size 66666: %f , %f\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
     int tw = round(m_cfs[idx].target_size[0]);//*m_cfs[idx].scale);
     int th = round(m_cfs[idx].target_size[1]);//*m_cfs[idx].scale);
     //float output_sigma = std::sqrt((float)th*tw)*sigma/m_trans_cell_size;
@@ -2593,7 +2597,7 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
         ptr1[1] = complV/ (ptr4[i] + m_scale_lambda);
        // printf("%f + %f i\t",ptr1[0],ptr1[1]);
         ptr1 += 2;
-        ptr4++;
+        //ptr4++;
     }
    // printf("\n");
     int len=nScales;
@@ -2662,6 +2666,9 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
 
     float bestScale = m_scale_factors[pi.x];
     m_cfs[idx].scale_adapt *= bestScale;
+
+    //printf("best scale detected: %f \n",bestScale);
+    //printf("scale detected: %f \n", m_cfs[idx].scale_adapt);
     if (m_cfs[idx].scale_adapt < m_cfs[idx].scale_min_factor)
         m_cfs[idx].scale_adapt=m_cfs[idx].scale_min_factor;
     else if(m_cfs[idx].scale_adapt > m_cfs[idx].scale_max_factor)
@@ -2675,6 +2682,10 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
    bg_w = tz_w+pad;
     bg_h = tz_h+pad;
     float scale = sqrt(m_trans_fixed_area/(bg_w*bg_h));
+
+
+
+    //printf("m_target_size 77777: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
     int  bg_area=round(sqrt(m_cfs[idx].target_size[0]*m_cfs[idx].target_size[1])*search_area_scale);
     int pre_norm_bg_w=round(m_cfs[idx].bg_size[0]*m_cfs[idx].scale);
     int pre_norm_bg_h=round(m_cfs[idx].bg_size[1]*m_cfs[idx].scale);
@@ -2686,13 +2697,15 @@ int StapleTracker::detectScaleCF(int idx, float &conf)
     // Apply the new value
    // m_cfs[idx].target_size[0] = round(tz_w);
    // m_cfs[idx].target_size[1] = round(tz_h);
-   m_cfs[idx].target_size[0] = floor(m_cfs[idx].target_size1[0]*m_cfs[idx].currentScaleFactor);
+    m_cfs[idx].target_size[0] = floor(m_cfs[idx].target_size1[0]*m_cfs[idx].currentScaleFactor);
     m_cfs[idx].target_size[1] = floor(m_cfs[idx].target_size1[1]*m_cfs[idx].currentScaleFactor);
+    //printf("currentScaleFactor: %f, m_target_size1 %f + %f \n",m_cfs[idx].currentScaleFactor,m_cfs[idx].target_size1[0],m_cfs[idx].target_size1[1]);
+    //printf("m_target_size   1111111111001: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
     m_cfs[idx].bg_size[0] = bg_area-round((bg_area-m_cfs[idx].base_tz[0])%2);
     m_cfs[idx].bg_size[1] = bg_area-(bg_area-m_cfs[idx].base_tz[1])%2;
     m_cfs[idx].fg_size[0] = (fg_w+((m_cfs[idx].bg_size[0])-fg_w)%2);
     m_cfs[idx].fg_size[1] = fg_h+((m_cfs[idx].bg_size[1])-fg_w)%2;
-   m_cfs[idx].currentScaleFactor = m_cfs[idx].scale_adapt * m_cfs[idx].currentScaleFactor;
+   m_cfs[idx].currentScaleFactor = bestScale* m_cfs[idx].currentScaleFactor;
 
 
    // float tz_w, tz_h, bg_w, bg_h, fg_w, fg_h;
@@ -2790,6 +2803,8 @@ int StapleTracker::getOneScaleFeaCF(cv::Mat &roiImg,
 cv::Mat StapleTracker::getScaleFeaCF(int idx) {
     int tw = m_cfs[idx].target_size1[0]*m_cfs[idx].currentScaleFactor;
     int th = m_cfs[idx].target_size1[1]*m_cfs[idx].currentScaleFactor;
+
+    //printf("m_target_size 2222: %d , %d\n",m_cfs[idx].target_size[0],m_cfs[idx].target_size[1]);
    // int tw = m_cfs[idx].target_size1[0];
    // int th = m_cfs[idx].target_size1[1];
 
@@ -2846,16 +2861,22 @@ cv::Mat StapleTracker::getScaleFeaCF(int idx) {
         roi.y = round(m_cfs[idx].pos[1] - roi.height/2.f);
         if(roi.width<=0||roi.height<=0)
         {
-            printf("roi.width or roi.height no more than 0\n");
+            printf("roi.width or roi.height no more than 0 No.1 \n");
         }
         //roi.x= round(pos0-roi.width/2.f);
         //roi.y = round(pos1 - roi.height/2.f);
         cv::Mat z;
         z = RectTools::subwindow(image, roi,
                                  cv::BORDER_REPLICATE);
-        if (z.cols != m_cfs[idx].scale_norm_tz[0] || z.rows != m_cfs[idx].scale_norm_tz[1])
-            cv::resize(z,z,cv::Size(m_cfs[idx].scale_norm_tz[0],
-                                    m_cfs[idx].scale_norm_tz[1]));
+        if (z.cols != m_cfs[idx].scale_norm_tz[0] || z.rows != m_cfs[idx].scale_norm_tz[1]) {
+
+         if(z.cols>m_cfs[idx].scale_norm_tz[1]){   cv::resize(z, z, cv::Size(m_cfs[idx].scale_norm_tz[0], m_cfs[idx].scale_norm_tz[1]),0,0,1);}
+            else{
+
+             cv::resize(z, z, cv::Size(m_cfs[idx].scale_norm_tz[0],
+                                       m_cfs[idx].scale_norm_tz[1]),0,0,3);
+         }
+        }
         //resize(z,z,cv::Size(m_cfs[idx].scale_norm_tz[0],
         //                      m_cfs[idx].scale_norm_tz[1]));
         getOneScaleFeaCF(z, feaTmp);
